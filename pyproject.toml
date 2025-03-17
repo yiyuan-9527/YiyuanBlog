@@ -1,0 +1,26 @@
+[tool.ruff.format] # https://docs.astral.sh/ruff/settings/#format
+quote-style = "single" # 引號風格，雙引號是預設值
+
+[tool.mypy]
+allow_redefinition = true # 允許重新定義變數
+check_untyped_defs = true # 檢查未標註型別的函數
+disable_error_code = ["empty-body"] # 禁用的錯誤代碼
+disallow_incomplete_defs = true # 禁止不完整的定義
+disallow_untyped_calls = true # 禁止未標註型別的函數調用
+disallow_untyped_defs = true # 禁止未標註型別的定義
+exclude = "^(migrations|.*manage\\.py)$" # 排除的目錄或文件
+force_union_syntax = true # 強制使用聯合類型的語法
+force_uppercase_builtins = true # 強制內建函數使用大寫
+ignore_missing_imports = true # 忽略缺失的導入
+incremental = true # 增量類型檢查
+plugins = ["mypy_django_plugin.main"] # 插件
+show_traceback = true # 顯示追踪信息
+strict_optional = true # 嚴格的可選型別 
+warn_redundant_casts = true # 警告冗餘的轉換
+warn_return_any = true # 警告任何返回值
+warn_unreachable = true # 警告不可達的代碼
+warn_unused_configs = true # 警告未使用的配置
+warn_unused_ignores = true # 警告未使用的忽略
+
+[tool.django-stubs]
+django_settings.module = "Yiyuan.settings" # Django 配置模塊
