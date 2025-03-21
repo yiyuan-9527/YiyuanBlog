@@ -4,11 +4,14 @@ from django.db import models
 
 # 自定義的 User 模型, 繼承自 AbstractUser
 class User(AbstractUser):
-    username = models.CharField(max_length=150, unique=True)  # 強制唯一的 username
+    username = models.CharField(max_length=150, unique=False, null=True)
     email = models.EmailField(unique=True)  # 強制唯一的 email
     password = models.CharField(max_length=128)  # 強制密碼長度
     bio = models.TextField(null=True)  # 個人簡介欄位（可選）
     avatar = models.ImageField(upload_to='avatars/', null=True)
+
+    USERNAME_FIELD = 'email'  # 使用 email 作為登入的識別欄位
+    REQUIRED_FIELDS = []  # 讓 email 變成唯一身份欄位
 
     # 設置不同的 related_name 來避免與 Django 預設模型發生衝突
     groups = models.ManyToManyField(
@@ -24,7 +27,7 @@ class User(AbstractUser):
     )
 
     def __str__(self) -> str:
-        return self.username
+        return self.email
 
 
 # 追蹤 (Flollow) 模型

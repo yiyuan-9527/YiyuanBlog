@@ -13,6 +13,7 @@ SECRET_KEY = 'django-insecure-ock5(9xr4y5-4t+mtyr*symx+&6q&b$&(bwty%@%=_dfh13ava
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
+# 允許所有外部 IP 訪問
 ALLOWED_HOSTS = ['*']
 
 # Application definition
@@ -27,6 +28,9 @@ INSTALLED_APPS = [
     'user',
     'post',
 ]
+
+# !重要 不使用內建的 auth.User, 要在第一次 migrate 前使用
+AUTH_USER_MODEL = 'user.User'
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
