@@ -6,4 +6,5 @@ api = NinjaAPI(
     description='這是一個 YiyuanBlog 的 API 文件, 供讀者參考',
 )
 
+# User API
 api.add_router(prefix='', router='user.api.router', tags=['User'])

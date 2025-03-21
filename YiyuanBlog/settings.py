@@ -1,3 +1,4 @@
+from datetime import timedelta
 from pathlib import Path
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -9,6 +10,14 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = 'django-insecure-ock5(9xr4y5-4t+mtyr*symx+&6q&b$&(bwty%@%=_dfh13ava'
+
+# JWT setting
+NINJA_JWT = {
+    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=30),  # Access token 過期時間
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=7),  # Regresh token 過期時間
+    'SIGNING_KEY': SECRET_KEY,  # 使用 SECRET_KEY 來簽署 JWT
+    'AUTH_HEADER_TYPES': ('Bearer',),  # 使用 `Bearer` 作為 JWT 標頭
+}
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
