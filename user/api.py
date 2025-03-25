@@ -23,11 +23,7 @@ def get_users(request: HttpRequest) -> list[str]:
     # 確保一定會回傳一個列表
     users = User.objects.all()
 
-    # 如果沒有使用者，回傳空列表，而不是 None
-    if not users:
-        return []
-
-    return [user.username for user in users]
+    return [user.email for user in users]
 
 
 @router.post(
