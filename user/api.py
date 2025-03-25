@@ -1,21 +1,40 @@
-from django.contrib.auth import authenticate, login
+from django.contrib.auth import authenticate
 from django.http import HttpRequest
 from ninja import Router
 from ninja.errors import HttpError
 
 from user.models import User
 from user.schemas import CreateUserRequest, LoginRequest
+from YiyuanBlog.auth import JWTAuth, create_access_token
 
 router = Router()
 
 
-@router.get(path='/users/')
-def get_users(request):
+@router.get(
+    path='/users/',
+    response=list[str],
+    summary='取得使用者列表',
+    auth=JWTAuth(),
+)
+def get_users(request: HttpRequest) -> list[str]:
+    """
+    取得所有使用者, 測驗 JWT token
+    """
+    # 確保一定會回傳一個列表
     users = User.objects.all()
-    return users
+
+    # 如果沒有使用者，回傳空列表，而不是 None
+    if not users:
+        return []
+
+    return [user.username for user in users]
 
 
-@router.post(path='/users/create/', response={201: dict}, summary='新增使用者(註冊)')
+@router.post(
+    path='/users/create/',
+    response={201: dict},
+    summary='新增使用者(註冊)',
+)
 def create_user(request: HttpRequest, payload: CreateUserRequest) -> tuple[int, dict]:
     """
     新增使用者(註冊)
@@ -34,16 +53,20 @@ def create_user(request: HttpRequest, payload: CreateUserRequest) -> tuple[int, 
     return 201, {'id': user.id, 'email': user.email}
 
 
-@router.post(path='/users/login/', response={200: dict}, summary='使用者登入')
+@router.post(
+    path='/users/login/',
+    response={200: dict},
+    summary='使用者登入',
+)
 def login_user(request: HttpRequest, payload: LoginRequest) -> dict[str, str]:
     """
     登入使用者
     """
     user = authenticate(request, email=payload.email, password=payload.password)
     # 檢查資料庫有沒有輸入的帳號密碼
-    if user is not None:
-        login(request, user)  # 將使用者登入狀態保存至 session
-        return {'status': 'success', 'message': '登入成功'}
-    else:
-        raise HttpError(401, '帳號或密碼錯誤')
-    # 代 token 狀態,
+    if user is None:
+        return HttpError(401, '帳號或密碼錯誤')
+
+    # 帶 token 狀態
+    token = create_access_token(user.id, user.email)
+    return {'status': 'success', 'token': token}
