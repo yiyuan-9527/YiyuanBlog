@@ -5,7 +5,7 @@ from ninja.errors import HttpError
 
 from user.models import User
 from user.schemas import CreateUserRequest, LoginRequest
-from YiyuanBlog.auth import JWTAuth, create_access_token
+from YiyuanBlog.auth import JWTAuth, generate_access_token
 
 router = Router()
 
@@ -64,5 +64,5 @@ def login_user(request: HttpRequest, payload: LoginRequest) -> dict[str, str]:
         return HttpError(401, '帳號或密碼錯誤')
 
     # 帶 token 狀態
-    token = create_access_token(user.id, user.email)
+    token = generate_access_token(user.id, user.email)
     return {'status': 'success', 'token': token}

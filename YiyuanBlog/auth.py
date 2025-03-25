@@ -13,7 +13,8 @@ from user.models import User
 
 SECRET_KEY = settings.SECRET_KEY
 ALGORITHM = 'HS256'
-TOKEN_EXPIRATION = 35  # 240 單位
+ACCESS_TOKEN_EXPIRATION = 60  # 60 單位
+REFSHE_TOKEN_EXPIRATION = 7  # 7 天
 
 
 class JWTAuth(HttpBearer):
@@ -30,7 +31,7 @@ class JWTAuth(HttpBearer):
             if email is None:
                 raise HttpError(401, 'Invalid token: Missing user_id')
 
-            # 確認 user 是否存在
+            # 透過 email 確認 user 是否存在
             user = User.objects.filter(email=email).first()
             if user is None:
                 raise HttpError(401, '找不到使用者')
@@ -43,15 +44,18 @@ class JWTAuth(HttpBearer):
             raise HttpError(401, '失效 token')
 
 
-# 生成 JWT token 的函數
-def create_access_token(user_id: int, email: str) -> str:
+# 產生 access token
+def generate_access_token(user_id: int, email: str) -> str:
     payload = {
-        'user_id': user_id,
         'email': email,
         'exp': datetime.now(timezone.utc)
-        + timedelta(seconds=TOKEN_EXPIRATION),  # 到期日
+        + timedelta(seconds=ACCESS_TOKEN_EXPIRATION),  # 到期日
         'iat': datetime.now(timezone.utc),  # 發行時間
     }
     token = jwt.encode(payload, SECRET_KEY, algorithm=ALGORITHM)
     print('發行成功: ' + token)
     return token
+
+
+# 產生 refresh token
+
