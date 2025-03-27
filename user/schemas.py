@@ -9,3 +9,7 @@ class CreateUserRequest(Schema):
 class LoginRequest(Schema):
     email: str = Field(examples=['yiyuan@example.com'])
     password: str = Field(examples=['password123'])
+
+
+class RefreshTokenRequest(Schema):
+    refresh_token: str = Field(examples=['refresh_token'])

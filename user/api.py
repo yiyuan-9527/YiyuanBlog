@@ -1,12 +1,20 @@
+from django.conf import settings
 from django.contrib.auth import authenticate
 from django.http import HttpRequest
 from ninja import Router
 from ninja.errors import HttpError
 
 from user.models import User
-from user.schemas import CreateUserRequest, LoginRequest
-from YiyuanBlog.auth import JWTAuth, generate_access_token
+from user.schemas import CreateUserRequest, LoginRequest, RefreshTokenRequest
+from YiyuanBlog.auth import (
+    JWTAuth,
+    generate_access_token,
+    generate_refresh_token,
+    refreshed_token,
+)
 
+SECRET_KEY = settings.SECRET_KEY
+ALGORITHM = 'HS256'
 router = Router()
 
 
@@ -58,11 +66,53 @@ def login_user(request: HttpRequest, payload: LoginRequest) -> dict[str, str]:
     """
     登入使用者
     """
+    # django 內建的 authenticate() 方法
     user = authenticate(request, email=payload.email, password=payload.password)
+
     # 檢查資料庫有沒有輸入的帳號密碼
     if user is None:
         return HttpError(401, '帳號或密碼錯誤')
 
-    # 帶 token 狀態
-    token = generate_access_token(user.id, user.email)
-    return {'status': 'success', 'token': token}
+    # 帶 token 回傳
+    access_token = generate_access_token(user.id, user.email)
+    refresh_token = generate_refresh_token(user.id, user.email)
+    print('登入成功')
+    return {
+        'status': 'success',
+        'access_token': access_token,
+        'refresh_token': refresh_token,
+    }
+
+
+@router.post(
+    path='/users/logout/',
+    response={200: dict},
+    summary='使用者登出',
+    auth=JWTAuth(),
+)
+def logut_user(request: HttpRequest) -> dict[str, str]:
+    """
+    登出使用者
+    """
+    # 前端負責刪除 access token 和 refresh token
+    return {
+        'status': 'success',
+        'message': '登出成功',
+    }
+
+
+@router.post(
+    path='/users/refresh/',
+    response={200: dict},
+    summary='刷新 token',
+)
+def refresh(request: HttpRequest, payload: RefreshTokenRequest) -> dict[str, str]:
+    """
+    刷新 token
+    """
+    new_access_token = refreshed_token(payload.refresh_token)
+    print('刷新成功')
+    return {
+        'status': 'success',
+        'access_token': new_access_token,
+    }
