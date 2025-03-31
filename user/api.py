@@ -62,7 +62,10 @@ def register_user(request: HttpRequest, payload: CreateUserRequest) -> tuple[int
     # 發送驗證信
     EmailVerificationService.send_verification_email(user)
 
-    return 201, {'id': user.id, 'email': user.email}
+    return 201, {
+        'id': user.id,
+        'email': user.email,
+    }
 
 
 @router.post(
@@ -133,7 +136,7 @@ def refresh(request: HttpRequest, payload: RefreshTokenRequest) -> dict[str, str
     summary='信箱驗證信',
     auth=None,
 )
-def verify_email(reqest: HttpRequest, token: str) -> dict[str, str]:
+def verify_email(request: HttpRequest, token: str) -> dict[str, str]:
     """
     信箱驗證信
     """
@@ -147,4 +150,7 @@ def verify_email(reqest: HttpRequest, token: str) -> dict[str, str]:
 
     user.is_verified = True
     user.save()
-    return {'status': 'success', 'message': '驗證成功'}
+    return {
+        'status': 'success',
+        'message': '驗證成功',
+    }

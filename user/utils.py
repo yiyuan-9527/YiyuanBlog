@@ -34,7 +34,7 @@ class EmailVerificationService:
             return {'error': '驗證連結無效'}
 
     @staticmethod
-    def send_verification_email(user: User) -> None:
+    def send_verification_email(user: User):
         """
         發送驗證信
         """

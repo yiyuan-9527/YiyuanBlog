@@ -1,5 +1,5 @@
-from django.db import models
 from django.core.validators import FileExtensionValidator
+from django.db import models
 
 
 class Category(models.Model):
@@ -18,7 +18,7 @@ class Post(models.Model):
     content = models.TextField()
     author = models.ForeignKey('user.User', on_delete=models.CASCADE)
     category = models.ForeignKey('Category', on_delete=models.SET_NULL, null=True)
-    tags = models.ManyToManyField('Tage')
+    tags = models.ManyToManyField('Tag')
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     status = models.CharField(
@@ -32,15 +32,16 @@ class Post(models.Model):
     )
     views_count = models.PositiveIntegerField(default=0)
 
+
 class PostImage(models.Model):
     post = models.ForeignKey('Post', on_delete=models.CASCADE)
     image = models.ImageField(
         upload_to='post_images/%Y/%m',
         validators=[
             FileExtensionValidator(
-                allowed_extensions=['jpg', 'jpeg', 'png', 'git','webp']
+                allowed_extensions=['jpg', 'jpeg', 'png', 'git', 'webp']
             )
-        ]
+        ],
     )
     alt_text = models.CharField(max_length=100, blank=True)
     is_cover = models.BooleanField(default=False)
