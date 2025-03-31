@@ -9,6 +9,7 @@ from user.schemas import (
     CreateUserRequest,
     LoginRequest,
     RefreshTokenRequest,
+    VerifyEmailRequest,
 )
 from user.utils import EmailVerificationService
 from YiyuanBlog.auth import (
@@ -61,6 +62,7 @@ def register_user(request: HttpRequest, payload: CreateUserRequest) -> tuple[int
 
     # 發送驗證信
     EmailVerificationService.send_verification_email(user)
+    print('發送驗證信成功')
 
     return 201, {
         'id': user.id,
@@ -130,25 +132,25 @@ def refresh(request: HttpRequest, payload: RefreshTokenRequest) -> dict[str, str
     }
 
 
-@router.get(
+@router.post(
     path='/users/verify-email/',
     response={200: dict},
     summary='信箱驗證信',
     auth=None,
 )
-def verify_email(request: HttpRequest, token: str) -> dict[str, str]:
+def verify_email(request: HttpRequest, payload: VerifyEmailRequest) -> dict[str, str]:
     """
     信箱驗證信
     """
     # 解碼 token
-    email = EmailVerificationService.verify_token(token)
+    email = EmailVerificationService.verify_token(payload.active_token)
     user = User.objects.filter(email=email).first()
 
     # 若找不到使用者
     if not user:
         raise HttpError(400, '找不到該使用者')
 
-    user.is_verified = True
+    user.is_active = True
     user.save()
     return {
         'status': 'success',

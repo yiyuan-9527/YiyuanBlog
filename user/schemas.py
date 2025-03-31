@@ -13,3 +13,7 @@ class LoginRequest(Schema):
 
 class RefreshTokenRequest(Schema):
     refresh_token: str = Field(examples=['refresh_token'])
+
+
+class VerifyEmailRequest(Schema):
+    active_token: str = Field(examples=['token123'])

@@ -27,6 +27,7 @@ class EmailVerificationService:
         try:
             # max_age 參數控制 token 的有效時間(秒)
             email = serializer.loads(active_token, salt='activate', max_age=max_age)
+            print('驗證信箱成功')
             return email
         except SignatureExpired:
             return {'error': '驗證連結已過期'}
@@ -40,8 +41,10 @@ class EmailVerificationService:
         """
         # 生成驗證 token
         active_token = EmailVerificationService.generate_verfication_token(user)
+        print('驗證註冊Token: ', active_token)
 
-        veurification_url = f'{settings.FRONTEND_URL}/verify-email?token={active_token}'
+        # url 後續改成前端的驗證頁面
+        veurification_url = 'http://127.0.0.1:8000/api/users/verify-email/'
         subject = '驗證您的信箱'
         message = f'請點擊以下連結驗證您的信箱: {veurification_url}'
 

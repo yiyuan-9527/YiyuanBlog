@@ -9,7 +9,7 @@ class User(AbstractUser):
     password = models.CharField(max_length=128)  # 強制密碼長度
     bio = models.TextField(null=True)  # 個人簡介欄位（可選）
     avatar = models.ImageField(upload_to='avatars/', null=True)
-    is_verified = models.BooleanField(default=False)  # 信箱驗證欄
+    is_active = models.BooleanField(default=False)  # 信箱驗證欄
 
     USERNAME_FIELD = 'email'  # 使用 email 作為登入的識別欄位
     REQUIRED_FIELDS = []  # 讓 email 變成唯一身份欄位
