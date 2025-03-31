@@ -10,13 +10,14 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = '71f6908acddad0c2063d08af6ed86564e6e1ef98d5601e859d4820dc0e649cd85a4aeb406cac21018aa8cbfb9673bd962f491cf8ea41cc72e19fbd791be9de2e13dac16d1134a8c15781a9f6b79abbd5dca821d0dd34287492ea56da3b28cfc0027476353cd34ae9db449d84243f1fb12768b79cee7a6d46bd8dc58b6c3de6a52d649937c9336fd50ce4c8bd349d68f03fe99ea9ee1ca790e4baf238e3f14fce743b79df381eee8bbd80d40e8534d2055c2d3c4a0ecd4f3eb7b1ec9ab612ff40bcd2326f8d575a0e92111b1f12fa7704b8c5631630e0e4e7e383aba97f7d7752eb3c749e8f5968ca3459b9b30a0e87caaa65d5449a28d573dc90c0e870efd0d9'
 
-# JWT setting
-# NINJA_JWT = {
-#     'ACCESS_TOKEN_LIFETIME': timedelta(minutes=30),  # Access token 過期時間
-#     'REFRESH_TOKEN_LIFETIME': timedelta(days=7),  # Regresh token 過期時間
-#     'SIGNING_KEY': SECRET_KEY,  # 使用 SECRET_KEY 來簽署 JWT
-#     'AUTH_HEADER_TYPES': ('Bearer',),  # 使用 `Bearer` 作為 JWT 標頭
-# }
+# Email 配置
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'  # 使用 SMTP 發送
+EMAIL_HOST = 'smtp.gmail.com'  # Gmail SMTP 伺服器 (也可用 Outlook, Yahoo 等)
+EMAIL_PORT = 587  # SMTP 通常是 587 (TLS) 或 465 (SSL)
+EMAIL_USE_TLS = True  # 使用 TLS 加密
+EMAIL_HOST_USER = 'yiyuanback@gmail.com'  # 你的 Gmail 信箱
+EMAIL_HOST_PASSWORD = 'bmbu rxqw iyhf ihsu'  # Google App 密碼, 需申請
+DEFAULT_FROM_EMAIL = 'yiyuanback@gmail.com'  # 預設寄件者信箱
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True

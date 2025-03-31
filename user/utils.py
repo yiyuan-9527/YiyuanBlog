@@ -1,0 +1,55 @@
+from typing import Any
+
+from django.conf import settings
+from django.core.mail import send_mail
+from itsdangerous import BadSignature, SignatureExpired, URLSafeTimedSerializer
+
+from .models import User
+
+
+class EmailVerificationService:
+    @staticmethod
+    def generate_verfication_token(user: User) -> str:
+        """
+        生成驗證 token
+        """
+        serializer = URLSafeTimedSerializer(settings.SECRET_KEY)
+        active_token = serializer.dumps(user.email, salt='activate')
+        return active_token
+
+    @staticmethod
+    def verify_token(active_token: str, max_age=3600) -> Any:  # 預設 1 小時過期
+        """
+        驗證 token
+        """
+        serializer = URLSafeTimedSerializer(settings.SECRET_KEY)
+
+        try:
+            # max_age 參數控制 token 的有效時間(秒)
+            email = serializer.loads(active_token, salt='activate', max_age=max_age)
+            return email
+        except SignatureExpired:
+            return {'error': '驗證連結已過期'}
+        except BadSignature:
+            return {'error': '驗證連結無效'}
+
+    @staticmethod
+    def send_verification_email(user: User) -> None:
+        """
+        發送驗證信
+        """
+        # 生成驗證 token
+        active_token = EmailVerificationService.generate_verfication_token(user)
+
+        veurification_url = f'{settings.FRONTEND_URL}/verify-email?token={active_token}'
+        subject = '驗證您的信箱'
+        message = f'請點擊以下連結驗證您的信箱: {veurification_url}'
+
+        # 發送驗證信
+        send_mail(
+            subject=subject,
+            message=message,
+            from_email=settings.DEFAULT_FROM_EMAIL,
+            recipient_list=[user.email],
+            fail_silently=False,
+        )

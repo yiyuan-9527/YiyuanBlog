@@ -5,9 +5,13 @@ from ninja import Router
 from ninja.errors import HttpError
 
 from user.models import User
-from user.schemas import CreateUserRequest, LoginRequest, RefreshTokenRequest
+from user.schemas import (
+    CreateUserRequest,
+    LoginRequest,
+    RefreshTokenRequest,
+)
+from user.utils import EmailVerificationService
 from YiyuanBlog.auth import (
-    JWTAuth,
     generate_access_token,
     generate_refresh_token,
     refreshed_token,
@@ -22,7 +26,6 @@ router = Router()
     path='/users/',
     response=list[str],
     summary='取得使用者列表',
-    auth=JWTAuth(),
 )
 def get_users(request: HttpRequest) -> list[str]:
     """
@@ -35,11 +38,12 @@ def get_users(request: HttpRequest) -> list[str]:
 
 
 @router.post(
-    path='/users/create/',
+    path='/users/register/',
     response={201: dict},
     summary='新增使用者(註冊)',
+    auth=None,
 )
-def create_user(request: HttpRequest, payload: CreateUserRequest) -> tuple[int, dict]:
+def register_user(request: HttpRequest, payload: CreateUserRequest) -> tuple[int, dict]:
     """
     新增使用者(註冊)
     """
@@ -50,9 +54,13 @@ def create_user(request: HttpRequest, payload: CreateUserRequest) -> tuple[int, 
     user = User.objects.create(
         email=payload.email,
     )
+
     # 使用 set_password() 設定密碼，這樣密碼會被加密
     user.set_password(raw_password=payload.password)
     user.save()
+
+    # 發送驗證信
+    EmailVerificationService.send_verification_email(user)
 
     return 201, {'id': user.id, 'email': user.email}
 
@@ -61,6 +69,7 @@ def create_user(request: HttpRequest, payload: CreateUserRequest) -> tuple[int, 
     path='/users/login/',
     response={200: dict},
     summary='使用者登入',
+    auth=None,
 )
 def login_user(request: HttpRequest, payload: LoginRequest) -> dict[str, str]:
     """
@@ -88,7 +97,6 @@ def login_user(request: HttpRequest, payload: LoginRequest) -> dict[str, str]:
     path='/users/logout/',
     response={200: dict},
     summary='使用者登出',
-    auth=JWTAuth(),
 )
 def logut_user(request: HttpRequest) -> dict[str, str]:
     """
@@ -105,6 +113,7 @@ def logut_user(request: HttpRequest) -> dict[str, str]:
     path='/users/refresh/',
     response={200: dict},
     summary='刷新 token',
+    auth=None,
 )
 def refresh(request: HttpRequest, payload: RefreshTokenRequest) -> dict[str, str]:
     """
@@ -116,3 +125,26 @@ def refresh(request: HttpRequest, payload: RefreshTokenRequest) -> dict[str, str
         'status': 'success',
         'access_token': new_access_token,
     }
+
+
+@router.get(
+    path='/users/verify-email/',
+    response={200: dict},
+    summary='信箱驗證信',
+    auth=None,
+)
+def verify_email(reqest: HttpRequest, token: str) -> dict[str, str]:
+    """
+    信箱驗證信
+    """
+    # 解碼 token
+    email = EmailVerificationService.verify_token(token)
+    user = User.objects.filter(email=email).first()
+
+    # 若找不到使用者
+    if not user:
+        raise HttpError(400, '找不到該使用者')
+
+    user.is_verified = True
+    user.save()
+    return {'status': 'success', 'message': '驗證成功'}
