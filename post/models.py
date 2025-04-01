@@ -1,6 +1,8 @@
 from django.core.validators import FileExtensionValidator
 from django.db import models
 
+from user.models import User
+
 
 class Category(models.Model):
     name = models.CharField(max_length=100)
@@ -13,15 +15,15 @@ class Tag(models.Model):
 
 
 class Post(models.Model):
-    title = models.CharField(max_length=100)
-    slug = models.SlugField(unique=True)
-    content = models.TextField()
-    author = models.ForeignKey('user.User', on_delete=models.CASCADE)
-    category = models.ForeignKey('Category', on_delete=models.SET_NULL, null=True)
-    tags = models.ManyToManyField('Tag')
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
-    status = models.CharField(
+    title = models.CharField(max_length=255)  # 文章標題
+    slug = models.SlugField(unique=True)  #
+    content = models.TextField()  # 文章內容
+    author = models.ForeignKey(User, on_delete=models.CASCADE)  # 關聯到自定義 User 模型
+    category = models.ForeignKey(Category, on_delete=models.SET_NULL, null=True)  # 分類
+    tags = models.ManyToManyField(Tag)  # 標籤
+    created_at = models.DateTimeField(auto_now_add=True)  # 發文時間
+    updated_at = models.DateTimeField(auto_now=True)  # 更新時間
+    status = models.CharField(  # 狀態
         max_length=20,
         choices=[
             ('draft', '草稿'),
@@ -30,7 +32,10 @@ class Post(models.Model):
         ],
         default='draft',
     )
-    views_count = models.PositiveIntegerField(default=0)
+    views_count = models.PositiveIntegerField(default=0)  # 瀏覽數量
+
+    def __str__(self) -> str:
+        return self.title
 
 
 class PostImage(models.Model):
