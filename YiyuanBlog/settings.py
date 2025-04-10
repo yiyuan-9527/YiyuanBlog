@@ -129,9 +129,11 @@ STATIC_URL = 'static/'
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # 定義媒體檔案的 URL 路徑, 當使用者上傳檔案時, Django 會透過此 URL 存取它們
+# 處理文件的外部訪問路徑
 MEDIA_URL = '/media/'
 
 # 定義伺服器端儲存媒體檔案的實際路徑, 所有上傳的媒體檔案將會儲存在該資料夾內
+# 處理文件在伺服器上的物理存儲
 MEDIA_ROOT = BASE_DIR / 'media'
 
 # CORS 設定, 跨域連結

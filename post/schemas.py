@@ -1,18 +1,30 @@
-from typing import List, Optional
+from typing import List
 
 from ninja import Field, Schema
 from pydantic import HttpUrl
 
+# class _AuthorInfo(Schema):
+#     id: int = Field(examples=[1])
+#     email: str = Field(examples=['test@example.com'])
 
-class CreatePost(Schema):
+
+class UpdatePostIn(Schema):
     """
-    建立新文章的 Schema (傳遞圖片 URL)
+    更新文章的請求
     """
 
-    title: str = Field(max_length=255, examples=['Post title'])
-    content: str = Field(examples=['Post content'])
-    # 使用 Optional 表示圖片是可選的
+    title: str | None = Field(
+        default=None,
+        max_length=255,
+        examples=['title'],
+    )
+    content: str | None = Field(default=None, examples=['HTML content'])
+    category_slug: str | None = Field(default=None, examples=['game'])
+    tag_slugs: str | None = Field(default=None, examples=['tag1, tag2'])
     # 這裡的 List[HttpUrl] 表示可以傳遞多個圖片 URL
-    image_url: Optional[List[HttpUrl]] = Field(
-        examples=['https://example.com/image.jpg']
+    image_url: List[HttpUrl] | None = Field(
+        default=None,
+        examples=[
+            'https://example.com/image.jpg',
+        ],
     )

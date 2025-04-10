@@ -13,8 +13,8 @@ from user.models import User
 
 SECRET_KEY = settings.SECRET_KEY
 ALGORITHM = 'HS256'
-ACCESS_TOKEN_EXPIRATION = 45  # 60 單位
-REFSHE_TOKEN_EXPIRATION = 90  # 7 天
+ACCESS_TOKEN_EXPIRATION = 4  # 4 周
+REFSHE_TOKEN_EXPIRATION = 12  # 12 周
 
 
 class JWTAuth(HttpBearer):
@@ -26,7 +26,7 @@ class JWTAuth(HttpBearer):
         try:
             # 解碼 token
             payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-            print(f'Payload: {payload}')
+            # print(f'Payload: {payload}')
 
             # 確認是訪問 token
             if payload.get('type') != 'access':
@@ -57,11 +57,12 @@ def generate_access_token(user_id: int, email: str) -> str:
     生成訪問 token
     """
     payload = {
+        'user_id': user_id,
         'email': email,
         'type': 'access',
         'iat': datetime.now(timezone.utc),  # 生成時間
         'exp': datetime.now(timezone.utc)
-        + timedelta(seconds=ACCESS_TOKEN_EXPIRATION),  # 到期時間
+        + timedelta(weeks=ACCESS_TOKEN_EXPIRATION),  # 到期時間
     }
     token = jwt.encode(payload, SECRET_KEY, algorithm=ALGORITHM)
     return token
@@ -73,11 +74,12 @@ def generate_refresh_token(user_id: int, email: str) -> str:
     生成刷新 token
     """
     payload = {
+        'user_id': user_id,
         'email': email,
         'type': 'refresh',
         'iat': datetime.now(timezone.utc),  # 生成時間
         'exp': datetime.now(timezone.utc)
-        + timedelta(seconds=REFSHE_TOKEN_EXPIRATION),  # 到期時間
+        + timedelta(weeks=REFSHE_TOKEN_EXPIRATION),  # 到期時間
     }
     token = jwt.encode(payload, SECRET_KEY, algorithm=ALGORITHM)
     return token
