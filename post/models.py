@@ -15,15 +15,17 @@ class Tag(models.Model):
 
 
 class Post(models.Model):
-    title = models.CharField(max_length=255)  # 文章標題
-    slug = models.SlugField(unique=True, null=True)  # 文章網址
-    content = models.TextField()  # 文章內容
-    author = models.ForeignKey(User, on_delete=models.CASCADE)  # 關聯到自定義 User 模型
-    category = models.ForeignKey(Category, on_delete=models.SET_NULL, null=True)  # 分類
-    tags = models.ManyToManyField(Tag)  # 標籤
-    created_at = models.DateTimeField(auto_now_add=True)  # 發文時間
-    updated_at = models.DateTimeField(auto_now=True)  # 更新時間
-    status = models.CharField(  # 狀態
+    title = models.CharField(max_length=255)
+    slug = models.SlugField(unique=True, null=True)
+    content = models.TextField()
+    author = models.ForeignKey(User, on_delete=models.CASCADE)
+    category = models.ForeignKey(Category, on_delete=models.SET_NULL, null=True)
+    tags = models.ManyToManyField(
+        Tag, through='TagManagement', through_fields=('post', 'tag')
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    status = models.CharField(
         max_length=20,
         choices=[
             ('draft', '草稿'),
@@ -32,10 +34,16 @@ class Post(models.Model):
         ],
         default='draft',
     )
-    views_count = models.PositiveIntegerField(default=0)  # 瀏覽數量
+    views_count = models.PositiveIntegerField(default=0)
 
     def __str__(self) -> str:
         return self.title
+
+
+# Post 和 Tag 的中介表
+class TagManagement(models.Model):
+    post = models.ForeignKey(Post, on_delete=models.CASCADE)
+    tag = models.ForeignKey(Tag, on_delete=models.CASCADE)
 
 
 class PostImage(models.Model):

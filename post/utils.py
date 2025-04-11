@@ -1,3 +1,5 @@
+import re
+import unicodedata
 import uuid
 from io import BytesIO
 
@@ -9,6 +11,24 @@ from PIL import Image
 # 上傳圖片設定
 ALLOWED_IMAGE_FORMATS = {'jpg', 'jpeg', 'png'}
 MAX_FILE_SIZE = 20 * 1024 * 1024  # 20MB
+
+
+def slugify(text: str) -> str:
+    """
+    將文字轉換為 slug 格式
+    """
+    # 將字串轉乘小寫
+    text = text.lower()
+
+    # 移除特殊字元(保留空格和中英文)
+    text = unicodedata.normalize('NFKD', text)
+    text = re.sub(r'[^\w\s\u4e00-\u9fff-]', '', text)
+
+    # 將空格替換為連字號
+    text = re.sub(r'\s+', '-', text)
+
+    # 去除線後多餘的連字號
+    return text.strip('-')
 
 
 def is_valid_image(file: UploadedFile) -> tuple[bool, str]:

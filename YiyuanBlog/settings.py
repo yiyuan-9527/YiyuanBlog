@@ -34,6 +34,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'corsheaders',  # 跨域請求
     'user',
     'post',
 ]
@@ -49,6 +50,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'corsheaders.middleware.CorsMiddleware',
 ]
 
 ROOT_URLCONF = 'YiyuanBlog.urls'
@@ -138,3 +140,14 @@ MEDIA_ROOT = BASE_DIR / 'media'
 
 # CORS 設定, 跨域連結
 CORS_ALLOW_ALL_ORIGINS = True
+
+# CORS 允許請求的方法
+CORS_ALLOWED_METHODS = [
+    'GET',
+    'POST',
+    'PUT',
+    'PATCH',
+    'DELETE',
+    'OPTIONS',
+    'HEAD',
+]

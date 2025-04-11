@@ -72,7 +72,7 @@ def register_user(request: HttpRequest, payload: CreateUserRequest) -> tuple[int
 
 @router.post(
     path='/users/login/',
-    response={200: dict},
+    response=dict[str, str],
     summary='使用者登入',
     auth=None,
 )

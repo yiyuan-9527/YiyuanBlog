@@ -8,8 +8,15 @@ from ninja import File, Router, UploadedFile
 from ninja.errors import HttpError
 
 from post.models import Post, PostImage
-from post.schemas import UpdatePostIn
-from post.utils import generate_unique_filename, is_valid_image, process_image_to_webp
+from post.schemas import (
+    UpdatePostContentIn,
+    UpdatePostTagIn,
+)
+from post.utils import (
+    generate_unique_filename,
+    is_valid_image,
+    process_image_to_webp,
+)
 
 router = Router()
 
@@ -23,7 +30,7 @@ def create_post(request: HttpRequest) -> tuple[int, dict]:
     """
     新增文章
     """
-    # 解析 JWT token, 取得使用者資訊
+    # 解析 JWT token, 取得使用者資訊, 才知道是誰在發文
     user = request.auth
     try:
         post = Post.objects.create(
@@ -36,15 +43,15 @@ def create_post(request: HttpRequest) -> tuple[int, dict]:
 
 
 @router.put(
-    path='{int:post_id}/',
+    path='update/{int:post_id}/',
     response={201: dict},
     summary='更新文章',
 )
 def upload_post(
-    request: HttpRequest, post_id: int, payload: UpdatePostIn
+    request: HttpRequest, post_id: int, payload: UpdatePostContentIn
 ) -> tuple[int, dict]:
     """
-    更新文章
+    更新文章內容
     """
     # 取得指定文章
     try:
@@ -57,8 +64,22 @@ def upload_post(
     for attr, value in payload.dict().items():
         setattr(post, attr, value)
     post.save()
+    print(f'更新成功: {post.title}')
     return 201, {'status': 'success', 'post_id': post.id}
 
+
+@router.put(
+    path='update/{int:post_id}/tags/',
+    response={201: dict},
+    summary='更新文章標籤分類',
+)
+def upload_post_tags(
+    request: HttpRequest, post_id: int, payload: UpdatePostTagIn
+) -> tuple[int, dict]:
+    """
+    更新文章標籤分類
+    """
+    
 
 @router.post(
     path='{int:post_id}/images/',
