@@ -33,5 +33,8 @@ class UpdatePostTagIn(Schema):
     更新文章標籤分類
     """
 
-    category_slug: str | None = Field(default=None, examples=['game'])
-    tag_slugs: str | None = Field(default=None, examples=['tag1, tag2'])
+    # category_slug: str | None = Field(default=None, examples=['game'])
+    tags: list[str] | None = Field(
+        default=None,
+        examples=[['資料科學', '桌上遊戲']],
+    )

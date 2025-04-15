@@ -2,12 +2,16 @@ import os
 from typing import List
 
 from django.core.files.storage import default_storage
+from django.db import transaction
 from django.http import HttpRequest
 from django.shortcuts import get_object_or_404
 from ninja import File, Router, UploadedFile
 from ninja.errors import HttpError
 
-from post.models import Post, PostImage
+from post.models import (
+    Post,
+    PostImage,
+)
 from post.schemas import (
     UpdatePostContentIn,
     UpdatePostTagIn,
@@ -16,6 +20,7 @@ from post.utils import (
     generate_unique_filename,
     is_valid_image,
     process_image_to_webp,
+    update_post_tags,
 )
 
 router = Router()
@@ -71,14 +76,25 @@ def upload_post(
 @router.put(
     path='update/{int:post_id}/tags/',
     response={201: dict},
-    summary='更新文章標籤分類',
+    summary='更新文章標籤',
 )
+@transaction.atomic
 def upload_post_tags(
     request: HttpRequest, post_id: int, payload: UpdatePostTagIn
 ) -> tuple[int, dict]:
     """
-    更新文章標籤分類
+    更新文章標籤
     """
+    post = get_object_or_404(Post, id=post_id)
+
+    # 權限檢查
+    if post.author != request.auth:
+        raise HttpError(403, '無權限修改此文章')
+
+    if payload.tags is not None:
+        update_post_tags(post, payload.tags)
+
+    return 201, {'status': 'success', 'post_id': post.id}
 
 
 @router.post(
