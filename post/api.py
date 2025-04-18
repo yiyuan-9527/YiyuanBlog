@@ -1,6 +1,8 @@
 import os
+from pathlib import Path
 from typing import List
 
+from django.conf import settings
 from django.core.files.storage import default_storage
 from django.db import transaction
 from django.http import HttpRequest
@@ -98,7 +100,7 @@ def upload_post_tags(
 
 
 @router.post(
-    path='{int:post_id}/images/',
+    path='upload/{int:post_id}/images/',
     response={201: dict},
     summary='上傳圖片',
 )
@@ -150,3 +152,37 @@ def upload_post_image(
         image_urls.append(image_url)
 
     return 201, {'image_urls': image_urls}
+
+
+@router.post(
+    path='upload/image/test/',
+    response={201: dict},
+    summary='測試上傳圖片',
+)
+def upload_test_image(
+    request: HttpRequest, files: List[UploadedFile] = File()
+) -> tuple[int, dict]:
+    """
+    測試上傳圖片
+    """
+    saved_files = []
+    for file in files:
+        # 驗證圖片格式和大小
+        vaild, error = is_valid_image(file)
+        if not vaild:
+            raise HttpError(400, error)
+
+        file_path = Path(settings.MEDIA_ROOT) / file.name
+        try:
+            with open(file_path, 'wb+') as f:
+                file_content = file.read()
+                f.write(file_content)
+            saved_files.append(file.name)
+
+        except Exception as e:
+            raise HttpError(400, f'無法儲存檔案: {e}')
+
+    return 201, {
+        'status': 'success',
+        'file_name': saved_files,
+    }

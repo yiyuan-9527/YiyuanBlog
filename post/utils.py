@@ -1,3 +1,4 @@
+import mimetypes
 import uuid
 from io import BytesIO
 
@@ -9,9 +10,9 @@ from PIL import Image
 
 from post.models import Post, Tag, TagManagement
 
-# 上傳圖片設定
-ALLOWED_IMAGE_FORMATS = {'jpg', 'jpeg', 'png'}
-MAX_FILE_SIZE = 20 * 1024 * 1024  # 20MB
+# 上傳圖片限制
+ALLOWED_IMAGE_FORMATS = {'image/jpeg', 'image/jpg', 'image/png'}
+MAX_FILE_SIZE = 2 * 1024 * 1024
 
 
 def get_or_create_tag(tag_text: str) -> Tag:
@@ -48,11 +49,17 @@ def is_valid_image(file: UploadedFile) -> tuple[bool, str]:
     """
     驗證圖片格式和大小
     """
-    ext = file.name.split('.')[-1].lower()
-    if ext not in ALLOWED_IMAGE_FORMATS:
-        return False, '不支援的圖片格式, 請上傳 jpg, jpeg 或 png 格式的圖片'
+    mime_type, _ = mimetypes.guess_type(file.name)
+
+    if mime_type is None or not mime_type.startswith('image/'):
+        return False, '不支援的圖片格式, 請上傳 jpg, jpeg, png 格式的圖片'
+    if mime_type not in ALLOWED_IMAGE_FORMATS:
+        return (
+            False,
+            f'不支援的圖片格式: {mime_type}, 請上傳 jpg, jpeg, png 格式的圖片',
+        )
     if file.size > MAX_FILE_SIZE:
-        return False, '圖片大小超過 20MB, 請上傳小於 20MB 的圖片'
+        return False, '圖片大小超過 2MB, 請上傳小於 2MB 的圖片'
 
     return True, None
 
@@ -79,7 +86,7 @@ def process_image_to_webp(file: UploadedFile) -> ContentFile:
     return ContentFile(image_buffer.getvalue())
 
 
-def generate_unique_filename() -> str:
+def rename_file() -> str:
     """
     生成唯一的檔案名稱
     """
