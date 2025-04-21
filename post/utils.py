@@ -1,8 +1,8 @@
 import mimetypes
 import uuid
 from io import BytesIO
+from pathlib import Path
 
-from django.core.files.base import ContentFile
 from django.utils.text import slugify
 from ninja import UploadedFile
 from ninja.errors import HttpError
@@ -59,35 +59,45 @@ def is_valid_image(file: UploadedFile) -> tuple[bool, str]:
             f'不支援的圖片格式: {mime_type}, 請上傳 jpg, jpeg, png 格式的圖片',
         )
     if file.size > MAX_FILE_SIZE:
-        return False, '圖片大小超過 2MB, 請上傳小於 2MB 的圖片'
+        return False, f'{file.name}大小超過 3MB, 請上傳小於 3MB 的圖片'
 
     return True, None
 
 
-def process_image_to_webp(file: UploadedFile) -> ContentFile:
+def rename_file(original_filename: str) -> str:
     """
-    將圖片轉換為 WebP 格式
-    在記憶體中(DRAM)處理圖片並返回 ContentFile, 不在硬碟上儲存
+    根據原檔名產生不重複的新檔名
+    格式: 原檔名_UUID4.副檔名
     """
+    # 檔案名稱,不包含副檔名
+    original_stem = Path(original_filename).stem
+    # 副檔名
+    original_suffix = Path(original_filename).suffix
+
+    unique_filename = uuid.uuid4().hex[:8]  # 可調整長度, 只用前8碼
+    new_filename = f'{original_stem}_{unique_filename}{original_suffix}'
+
+    return new_filename
+
+
+def process_image_to_webp(file: UploadedFile) -> tuple[str, bytes]:
+    """
+    將圖片轉換為 WebP 格式, 在記憶體中(DRAM)處理圖片
+    """
+    # 檔案名稱,不包含副檔名
+    original_stem = Path(file.name).stem
+    # 產生不重複的檔名
+    unique_name = rename_file(original_stem + '.webp')
+
     try:
-        image = Image.open(file.file)
+        image = Image.open(file)
     except Exception as e:
         raise HttpError(400, f'無法處理圖片: {e}')
 
     image = image.convert('RGB')
-    image_buffer = BytesIO()
-
-    image.save(image_buffer, format='WEBP', quality=80)
-    # 將指標移到緩衝區的開始位置
-    image_buffer.seek(0)
-    # 將圖片轉換為 WebP 格式並返回 ContentFile
-    # 使用 UUID 生成唯一的檔案名稱
-    # 這裡的 name 只是用於在 Django 中顯示檔案名稱，實際上不會儲存到硬碟
-    return ContentFile(image_buffer.getvalue())
-
-
-def rename_file() -> str:
-    """
-    生成唯一的檔案名稱
-    """
-    return f'{uuid.uuid4().hex}.webp'
+    # 建立記憶體的暫存物件
+    buffer = BytesIO()
+    # 將圖片存進記憶體的暫存物件, 並轉換為 WebP 格式
+    image.save(buffer, format='WEBP', quality=80)
+    # 返回 名稱, 暫存物件的內容
+    return unique_name, buffer.getvalue()
