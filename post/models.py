@@ -46,6 +46,7 @@ class TagManagement(models.Model):
     tag = models.ForeignKey(Tag, on_delete=models.CASCADE)
 
 
+# 文章內的圖片
 class PostImage(models.Model):
     post = models.ForeignKey(Post, on_delete=models.CASCADE)
     image = models.ImageField(
@@ -53,13 +54,6 @@ class PostImage(models.Model):
         validators=[
             FileExtensionValidator(allowed_extensions=['jpg', 'jpeg', 'png', 'webp'])
         ],
-        width_field='width',  # 指定儲存寬度的欄位名稱
-        height_field='heidht',  # 指定儲存高度的欄位名稱
     )
-    alt_text = models.CharField(max_length=100, blank=True)
     is_cover = models.BooleanField(default=False)
     uploaded_at = models.DateTimeField(auto_now_add=True)
-    width = models.PositiveIntegerField(null=True, blank=True)  # 用於儲存寬度的整數欄位
-    height = models.PositiveIntegerField(
-        null=True, blank=True
-    )  # 用於儲存高度的整數欄位

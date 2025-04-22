@@ -1,7 +1,6 @@
-from pathlib import Path
 from typing import List
 
-from django.conf import settings
+from django.core.files.base import ContentFile
 from django.db import transaction
 from django.http import HttpRequest
 from django.shortcuts import get_object_or_404
@@ -10,6 +9,7 @@ from ninja.errors import HttpError
 
 from post.models import (
     Post,
+    PostImage,
 )
 from post.schemas import (
     UpdatePostContentIn,
@@ -95,75 +95,23 @@ def upload_post_tags(
     return 201, {'status': 'success', 'post_id': post.id}
 
 
-# @router.post(
-#     path='upload/{int:post_id}/images/',
-#     response={201: dict},
-#     summary='上傳圖片',
-# )
-# def upload_post_image(
-#     request: HttpRequest, post_id: int, files: List[UploadedFile] = File()
-# ) -> tuple[int, dict]:
-#     """
-#     接收多個圖片檔案, 依序驗證格式和大小,
-#     建立對應的 PostImage 物件並儲存到資料庫
-#     回傳圖片 URL list
-#     """
-#     # 取得指定文章
-#     try:
-#         post = Post.objects.get(id=post_id)
-#     except Post.DoesNotExist:
-#         raise HttpError(404, '文章不存在')
-
-#     # 儲存圖片 URL list
-#     image_urls = []
-#     for file in files:
-#         # 驗證圖片格式和大小
-#         valid, error = is_valid_image(file)
-#         if not valid:
-#             raise HttpError(400, error)
-
-#         # 將圖片轉換為 WebP 格式
-#         try:
-#             image_content = process_image_to_webp(file)
-#         except HttpError as e:
-#             raise HttpError(400, f'無法處理圖片: {e}')
-
-#         # 產生唯一檔名與儲存路徑 ( 放到 media/post_images/)
-#         unique_filename = generate_unique_filename()
-#         upload_path = os.path.join('post_images', unique_filename)
-
-#         # 儲存圖片檔案
-#         saved_path = default_storage.save(upload_path, image_content)
-
-#         # 儲存圖片到資料庫
-#         PostImage.objects.create(
-#             post=post,
-#             image=image_content,
-#             alt_text=file.name,
-#             is_cover=False,
-#         )
-
-#         # 產生 URL, 方便前端取得
-#         image_url = request.build_absolute_uri(f'/media/{saved_path}')
-#         image_urls.append(image_url)
-
-#     return 201, {'image_urls': image_urls}
-
-
 @router.post(
-    path='upload/image/test/',
+    path='upload/{int:post_id}/images/',
     response={201: dict},
     summary='測試上傳圖片',
 )
 def upload_test_image(  # files 是前端請求的 key, 這裡要對應
-    request: HttpRequest, files: List[UploadedFile] = File()
+    request: HttpRequest, post_id: int, files: List[UploadedFile] = File()
 ) -> tuple[int, dict]:
     """
-    測試上傳圖片,
+    上傳圖片
     檔案限制: jpg, jpeg, png
     大小限制: 3MB
     """
+    post = get_object_or_404(Post, id=post_id)
+
     saved_files = []
+
     for file in files:
         # 驗證圖片格式和大小
         vaild, error = is_valid_image(file)
@@ -171,13 +119,20 @@ def upload_test_image(  # files 是前端請求的 key, 這裡要對應
             raise HttpError(400, error)
 
         new_filename, webp_bytes = process_image_to_webp(file)
-        file_path = Path(settings.MEDIA_ROOT) / new_filename
-        try:
-            with open(file_path, 'wb+') as f:
-                f.write(webp_bytes)
 
-            # 
-            file_url = request.build_absolute_uri(settings.MEDIA_URL + new_filename)
+        try:
+            image_file = ContentFile(webp_bytes, name=new_filename)
+
+            # 將圖片存至資料庫
+            post_image = PostImage.objects.create(
+                post=post,
+                image=image_file,
+                is_cover=False,  # 是否為封面圖片
+            )
+
+            # 設定 URL, 方便前端取得
+            # post_image 實例. image 欄位. url 屬性
+            file_url = request.build_absolute_uri(post_image.image.url)
             saved_files.append(file_url)
 
         except Exception as e:
