@@ -8,7 +8,11 @@ from ninja import UploadedFile
 from ninja.errors import HttpError
 from PIL import Image
 
-from post.models import Post, Tag, TagManagement
+from post.models import (
+    Post,
+    Tag,
+    TagManagement,
+)
 
 # 上傳圖片限制
 ALLOWED_IMAGE_FORMATS = {'image/jpeg', 'image/jpg', 'image/png'}
@@ -101,3 +105,6 @@ def process_image_to_webp(file: UploadedFile) -> tuple[str, bytes]:
     image.save(buffer, format='WEBP', quality=80)
     # 返回 名稱, 暫存物件的內容
     return unique_name, buffer.getvalue()
+
+
+

@@ -126,7 +126,7 @@ def upload_test_image(  # files 是前端請求的 key, 這裡要對應
             # 將圖片存至資料庫
             post_image = PostImage.objects.create(
                 post=post,
-                image=image_file,
+                image=image_file,  # 檔案上傳的路徑在 models.py 裡面定義
                 is_cover=False,  # 是否為封面圖片
             )
 

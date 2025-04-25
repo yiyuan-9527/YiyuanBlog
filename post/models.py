@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from django.core.validators import FileExtensionValidator
 from django.db import models
 
@@ -46,11 +48,21 @@ class TagManagement(models.Model):
     tag = models.ForeignKey(Tag, on_delete=models.CASCADE)
 
 
+def post_image_path(instance: models, filename: str) -> str:
+    """
+    圖片儲存路徑
+    """
+    # 物件的 post 欄位;的 author 欄位;的 id 欄位
+    user_id = str(instance.post.author.id)
+    date = datetime.now().strftime('%Y/%m')
+    return f'user_{user_id}/post_images/{date}/{filename}'
+
+
 # 文章內的圖片
 class PostImage(models.Model):
     post = models.ForeignKey(Post, on_delete=models.CASCADE)
     image = models.ImageField(
-        upload_to='post_images/%Y/%m',
+        upload_to=post_image_path,
         validators=[
             FileExtensionValidator(allowed_extensions=['jpg', 'jpeg', 'png', 'webp'])
         ],

@@ -13,8 +13,8 @@ from user.models import User
 
 SECRET_KEY = settings.SECRET_KEY
 ALGORITHM = 'HS256'
-ACCESS_TOKEN_EXPIRATION = 4  # 4 周
-REFSHE_TOKEN_EXPIRATION = 12  # 12 周
+ACCESS_TOKEN_EXPIRATION = 8  # 8 周
+REFSHE_TOKEN_EXPIRATION = 16  # 16 周
 
 
 class JWTAuth(HttpBearer):
