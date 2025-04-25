@@ -55,6 +55,7 @@ def post_image_path(instance: models, filename: str) -> str:
     # 物件的 post 欄位;的 author 欄位;的 id 欄位
     user_id = str(instance.post.author.id)
     date = datetime.now().strftime('%Y/%m')
+
     return f'user_{user_id}/post_images/{date}/{filename}'
 
 

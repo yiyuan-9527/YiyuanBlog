@@ -3,10 +3,6 @@ from typing import List
 from ninja import Field, Schema
 from pydantic import HttpUrl
 
-# class _AuthorInfo(Schema):
-#     id: int = Field(examples=[1])
-#     email: str = Field(examples=['test@example.com'])
-
 
 class UpdatePostContentIn(Schema):
     """

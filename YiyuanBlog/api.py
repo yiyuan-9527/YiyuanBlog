@@ -9,6 +9,7 @@ api = NinjaAPI(
     description='這是一個 YiyuanBlog 的 API 文件, 供讀者參考',
 )
 
-# API endpoints
+# API 端點 endpoint
 api.add_router(prefix='', router='user.api.router', tags=['User'])
 api.add_router(prefix='post/', router='post.api.router', tags=['Post'])
+api.add_router(prefix='album/', router='album.api.router', tags=['Album'])

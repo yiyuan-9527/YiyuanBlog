@@ -16,7 +16,7 @@ from post.models import (
 
 # 上傳圖片限制
 ALLOWED_IMAGE_FORMATS = {'image/jpeg', 'image/jpg', 'image/png'}
-MAX_FILE_SIZE = 2 * 1024 * 1024
+MAX_FILE_SIZE = 3 * 1024 * 1024
 
 
 def get_or_create_tag(tag_text: str) -> Tag:
@@ -105,6 +105,3 @@ def process_image_to_webp(file: UploadedFile) -> tuple[str, bytes]:
     image.save(buffer, format='WEBP', quality=80)
     # 返回 名稱, 暫存物件的內容
     return unique_name, buffer.getvalue()
-
-
-

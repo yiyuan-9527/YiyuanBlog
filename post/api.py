@@ -98,7 +98,7 @@ def upload_post_tags(
 @router.post(
     path='upload/{int:post_id}/images/',
     response={201: dict},
-    summary='測試上傳圖片',
+    summary='文章上傳圖片',
 )
 def upload_test_image(  # files 是前端請求的 key, 這裡要對應
     request: HttpRequest, post_id: int, files: List[UploadedFile] = File()
