@@ -12,6 +12,7 @@ class Album(models.Model):
     author = models.ForeignKey(User, on_delete=models.CASCADE)
 
 
+# 儲存路徑設置
 def album_image_path(instance: models.Model, filename: str) -> str:
     """
     圖片儲存路徑

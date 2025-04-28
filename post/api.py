@@ -16,9 +16,11 @@ from post.schemas import (
     UpdatePostTagIn,
 )
 from post.utils import (
+    update_post_tags,
+)
+from shared.images_utils import (
     is_valid_image,
     process_image_to_webp,
-    update_post_tags,
 )
 
 router = Router()
