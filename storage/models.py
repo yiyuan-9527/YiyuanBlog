@@ -1,0 +1,44 @@
+from django.db import models
+
+from user.models import User
+
+
+class Storage(models.Model):
+    class PlanChoices(models.TextChoices):
+        FREE = 'Free', '免費方案'
+        BASIC = 'BASIC', '基本方案'
+        STANDARD = 'STANDARD', '標準方案'
+        PREMIUM = 'PREMIUM', '高級方案'
+
+    PlAN_STORAGE_LIMIT = {
+        PlanChoices.FREE: 1024 * 1024 * 1024 * 50,  # 50 GB
+        PlanChoices.BASIC: 1024 * 1024 * 1024 * 150,  # 150 GB
+        PlanChoices.STANDARD: 1024 * 1024 * 1024 * 300,  # 300 GB
+        PlanChoices.PREMIUM: 1024 * 1024 * 1024 * 800,  # 800 GB
+    }
+
+    user = models.OneToOneField(
+        User, on_delete=models.CASCADE, related_name='storage_usage'
+    )
+    used_storage = models.BigIntegerField(default=0)
+    storage_limit = models.BigIntegerField(blank=True)  # 儲存空間上限
+    is_paid = models.BooleanField(default=False)  # 是否為付費會員
+    plan_name = models.CharField(  # 方案名稱
+        max_length=10,
+        choices=PlanChoices.choices,
+        default=PlanChoices.FREE,
+    )
+    plan_expire_at = models.DateTimeField(
+        null=True, blank=True
+    )  # 付費到期時間(免費用戶為空)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"{self.user.username}'s Storage Usage"
+
+    def save(self, *args, **kwargs):
+        if not self.storage_limit:
+            self.storage_limit = self.PlAN_STORAGE_LIMIT.get(self.plan_name, 0)
+        super().save(*args, **kwargs)
