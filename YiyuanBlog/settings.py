@@ -37,6 +37,8 @@ INSTALLED_APPS = [
     'corsheaders',  # 跨域請求
     'user',
     'post',
+    'album',
+    'storage',
 ]
 
 # !重要 不使用內建的 auth.User, 要在第一次 migrate 前使用

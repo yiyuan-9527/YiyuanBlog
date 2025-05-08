@@ -3,10 +3,6 @@ from typing import List
 from ninja import Field, Schema
 from pydantic import HttpUrl
 
-# class _AuthorInfo(Schema):
-#     id: int = Field(examples=[1])
-#     email: str = Field(examples=['test@example.com'])
-
 
 class UpdatePostContentIn(Schema):
     """
@@ -33,5 +29,8 @@ class UpdatePostTagIn(Schema):
     更新文章標籤分類
     """
 
-    category_slug: str | None = Field(default=None, examples=['game'])
-    tag_slugs: str | None = Field(default=None, examples=['tag1, tag2'])
+    # category_slug: str | None = Field(default=None, examples=['game'])
+    tags: list[str] | None = Field(
+        default=None,
+        examples=[['資料科學', '桌上遊戲']],
+    )

@@ -11,7 +11,7 @@ from user.schemas import (
     RefreshTokenRequest,
     VerifyEmailRequest,
 )
-from user.utils import EmailVerificationService
+from user.utils import EmailVerificationService, create_user_folder
 from YiyuanBlog.auth import (
     generate_access_token,
     generate_refresh_token,
@@ -64,6 +64,10 @@ def register_user(request: HttpRequest, payload: CreateUserRequest) -> tuple[int
     EmailVerificationService.send_verification_email(user)
     print('發送驗證信成功')
 
+    # 創建使用者資料夾
+    create_user_folder(user.id)
+    print('創建使用者資料夾成功')
+
     return 201, {
         'id': user.id,
         'email': user.email,
@@ -72,11 +76,11 @@ def register_user(request: HttpRequest, payload: CreateUserRequest) -> tuple[int
 
 @router.post(
     path='/users/login/',
-    response=dict[str, str],
+    response={201: dict},
     summary='使用者登入',
     auth=None,
 )
-def login_user(request: HttpRequest, payload: LoginRequest) -> dict[str, str]:
+def login_user(request: HttpRequest, payload: LoginRequest) -> tuple[int, dict]:
     """
     登入使用者
     """
@@ -91,7 +95,7 @@ def login_user(request: HttpRequest, payload: LoginRequest) -> dict[str, str]:
     access_token = generate_access_token(user.id, user.email)
     refresh_token = generate_refresh_token(user.id, user.email)
     print('登入成功')
-    return {
+    return 201, {
         'status': 'success',
         'access_token': access_token,
         'refresh_token': refresh_token,

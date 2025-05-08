@@ -3,50 +3,13 @@ import uuid
 from io import BytesIO
 from pathlib import Path
 
-from django.utils.text import slugify
 from ninja import UploadedFile
 from ninja.errors import HttpError
 from PIL import Image
 
-from post.models import (
-    Post,
-    Tag,
-    TagManagement,
-)
-
 # 上傳圖片限制
 ALLOWED_IMAGE_FORMATS = {'image/jpeg', 'image/jpg', 'image/png'}
 MAX_FILE_SIZE = 3 * 1024 * 1024
-
-
-def get_or_create_tag(tag_text: str) -> Tag:
-    """
-    根據 tag 名稱取得或建立 Tag 物件
-    """
-    slug = slugify(tag_text, allow_unicode=True)
-    tag, created = Tag.objects.get_or_create(
-        slug=slug,
-        defaults={'name': tag_text},
-    )
-
-    # 如果標籤名稱與 slug 不同，則更新標籤名稱
-    # 若有找到 = False 且標籤名稱不同，則更新標籤名稱
-    if not created and tag.name != tag_text:
-        tag.name = tag_text
-        tag.save()
-    return tag
-
-
-def update_post_tags(post: Post, tag_list: list[str]) -> None:
-    """
-    清除原有標籤, 並根據給定 tag list 更新文章標籤
-    """
-    # 清除現有標籤
-    TagManagement.objects.filter(post=post).delete()
-
-    for tag_text in tag_list:
-        tag = get_or_create_tag(tag_text)
-        TagManagement.objects.create(post=post, tag=tag)
 
 
 def is_valid_image(file: UploadedFile) -> tuple[bool, str]:

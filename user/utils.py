@@ -1,10 +1,24 @@
+from pathlib import Path
 from typing import Any
 
 from django.conf import settings
 from django.core.mail import send_mail
 from itsdangerous import BadSignature, SignatureExpired, URLSafeTimedSerializer
+from ninja.errors import HttpError
 
 from .models import User
+
+
+def create_user_folder(user_id: int) -> None:
+    """
+    創建使用者資料夾
+    """
+    # 設置路徑
+    user_folder = Path(settings.MEDIA_ROOT) / f'user_{user_id}'
+    try:
+        user_folder.mkdir(parents=True, exist_ok=True)
+    except OSError as e:
+        HttpError(500, f'創建使用者資料夾失敗: {e}')
 
 
 class EmailVerificationService:
