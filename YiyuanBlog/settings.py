@@ -80,7 +80,7 @@ WSGI_APPLICATION = 'YiyuanBlog.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'blog',
+        'NAME': 'blog_test',
         'USER': 'yiyuan',
         'PASSWORD': 'yyb13190303',
         'HOST': 'localhost',
