@@ -13,3 +13,4 @@ api = NinjaAPI(
 api.add_router(prefix='', router='user.api.router', tags=['User'])
 api.add_router(prefix='post/', router='post.api.router', tags=['Post'])
 api.add_router(prefix='album/', router='album.api.router', tags=['Album'])
+api.add_router(prefix='storage/', router='storage.api.router', tags=['Storage'])

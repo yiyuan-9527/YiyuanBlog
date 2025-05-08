@@ -10,7 +10,7 @@ class Storage(models.Model):
         STANDARD = 'STANDARD', '標準方案'
         PREMIUM = 'PREMIUM', '高級方案'
 
-    PlAN_STORAGE_LIMIT = {
+    PLAN_STORAGE_LIMIT = {
         PlanChoices.FREE: 1024 * 1024 * 1024 * 50,  # 50 GB
         PlanChoices.BASIC: 1024 * 1024 * 1024 * 150,  # 150 GB
         PlanChoices.STANDARD: 1024 * 1024 * 1024 * 300,  # 300 GB
@@ -40,5 +40,5 @@ class Storage(models.Model):
 
     def save(self, *args, **kwargs):
         if not self.storage_limit:
-            self.storage_limit = self.PlAN_STORAGE_LIMIT.get(self.plan_name, 0)
+            self.storage_limit = self.PLAN_STORAGE_LIMIT.get(self.plan_name, 0)
         super().save(*args, **kwargs)
