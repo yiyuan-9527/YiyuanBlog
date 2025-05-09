@@ -19,6 +19,7 @@ from shared.images_utils import (
     is_valid_image,
     process_image_to_webp,
 )
+from storage.services import StorageService
 
 router = Router()
 
@@ -83,10 +84,17 @@ def upload_album_image(
     檔案限制: jpg, jpeg, png
     大小限制: 3MB
     """
+    user = request.auth
     album = get_object_or_404(Album, id=album_id)
 
-    saved_images = []
+    # 檢查使用者空間是否足夠
+    total_upload_size = sum(image.size for image in images)
+    user_space = StorageService.check_user_limit(user, total_upload_size)
+    if not user_space:
+        StorageService.exceeded_storage_limit(user)
 
+    # 開始處理上傳的圖片
+    saved_images = []
     for image in images:
         # 驗證圖片格式和大小
         vaild, error = is_valid_image(image)

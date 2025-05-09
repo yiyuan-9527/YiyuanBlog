@@ -17,10 +17,10 @@ class Storage(models.Model):
         PlanChoices.PREMIUM: 1024 * 1024 * 1024 * 800,  # 800 GB
     }
 
-    user = models.OneToOneField(
+    user = models.OneToOneField(  # 使用者
         User, on_delete=models.CASCADE, related_name='storage_usage'
     )
-    used_storage = models.BigIntegerField(default=0)
+    used_storage = models.BigIntegerField(default=0)  # 已使用的儲存空間
     storage_limit = models.BigIntegerField(blank=True)  # 儲存空間上限
     is_paid = models.BooleanField(default=False)  # 是否為付費會員
     plan_name = models.CharField(  # 方案名稱
