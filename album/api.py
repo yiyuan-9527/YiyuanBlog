@@ -101,6 +101,7 @@ def upload_album_image(
         if not vaild:
             raise HttpError(400, error)
 
+        # 重新命名, 並轉換為 WebP 格式
         new_filename, webp_bytes = process_image_to_webp(image)
 
         try:
