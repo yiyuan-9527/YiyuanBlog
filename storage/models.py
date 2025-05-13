@@ -22,7 +22,7 @@ class Storage(models.Model):
     )
     used_storage = models.BigIntegerField(default=0)  # 已使用的儲存空間
     storage_limit = models.BigIntegerField(blank=True)  # 儲存空間上限
-    is_paid = models.BooleanField(default=False)  # 是否為付費會員
+    is_paid = models.BooleanField(default=False)  # 是否為付費會員, 可刪除
     plan_name = models.CharField(  # 方案名稱
         max_length=10,
         choices=PlanChoices.choices,

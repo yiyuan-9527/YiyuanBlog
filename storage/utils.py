@@ -1,29 +1,25 @@
 from django.utils import timezone
 
-from album.models import AlbumImage
-from post.models import PostImage
-
 from .models import Storage
 
+# def calculate_user_storage(user: object):
+#     """
+#     計算使用者的儲存空間
 
-def calculate_user_storage(user: object):
-    """
-    計算使用者的儲存空間
+#     :param user: 使用者物件
+#     :return: 使用了多少空間
+#     """
+#     total_bytes = 0
 
-    :param user: 使用者物件
-    :return: 使用了多少空間
-    """
-    total_bytes = 0
+#     # 加總 PosttImage 檔案大小
+#     post_images = PostImage.objects.filter(post__author=user)
+#     total_bytes += sum(img.image.size for img in post_images if img.image)
 
-    # 加總 PosttImage 檔案大小
-    post_images = PostImage.objects.filter(post__author=user)
-    total_bytes += sum(img.image.size for img in post_images if img.image)
+#     # 加總 AlbumImage 檔案大小
+#     album_images = AlbumImage.objects.filter(album__author=user)
+#     total_bytes += sum(img.image.size for img in album_images if img.image)
 
-    # 加總 AlbumImage 檔案大小
-    album_images = AlbumImage.objects.filter(album__author=user)
-    total_bytes += sum(img.image.size for img in album_images if img.image)
-
-    return total_bytes
+#     return total_bytes
 
 
 def upgrade_storage_plan(user, new_plan: str, duration_days: int = 30):

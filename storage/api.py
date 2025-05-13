@@ -1,7 +1,11 @@
-from django.http import HttpRequest
-from ninja import Router
+from datetime import datetime, timedelta, timezone
 
-from .utils import calculate_user_storage
+from django.http import HttpRequest
+from django.shortcuts import get_object_or_404
+from ninja import Router
+from ninja.errors import HttpError
+
+from .schemas import UpgradePlanIn
 
 router = Router()
 
@@ -16,17 +20,52 @@ def get_storage_info(request: HttpRequest) -> tuple[int, dict]:
     取得使用者儲存空間資訊
     """
     print(f'User: {request.auth}')
+
     user = request.auth
-    used_bytes = calculate_user_storage(user)
+
+    # 取得用戶使用了多少儲存空間
+    used_bytes = user.storage_usage.used_storage
+    # 計算用戶的儲存空間上限
     user_storage_limit = user.storage_usage.storage_limit
+    print(user.storage_usage.storage_limit)
 
     return 200, {
         'status': 'success',
         'used_bytes': used_bytes,
         'storage_limit': round(
-            user_storage_limit / (1024 * 1024 * 1024), 2
+            user_storage_limit / (1024 * 1024), 2
         ),  # 轉換為 GB, 顯示小數點後兩位
-        'used_gb': round(
-            used_bytes / (1024 * 1024 * 1024), 2
-        ),  # 轉換為 GB, 顯示小數點後兩位
+        'used_gb': round(used_bytes / (1024 * 1024), 2),  # 轉換為 GB, 顯示小數點後兩位
+    }
+
+
+@router.post(
+    path='upgrade/',
+    response={200: dict},
+    summary='升級方案',
+)
+def upgrade_plan(request: HttpRequest, payload: UpgradePlanIn) -> tuple[int, dict]:
+    """
+    升級用戶方案
+    """
+    user = request.auth
+    storage = get_object_or_404(user=user)
+
+    if payload.new_plan not in storage.PlanChoices.values:
+        raise HttpError(400, '無效的方案名稱')
+
+    if storage.plan_name == payload.new_plan:
+        raise HttpError(400, '已經是該方案了')
+
+    # 設定新方案與到期時間
+    storage.plan_name = payload.new_plan
+    storage.plan_expire_at = datetime.now(timezone.utc) + timedelta(minutes=3)
+    storage.is_paid = True
+    storage.save()
+
+    return 200, {
+        'status': 'success',
+        'plan_name': storage.plan_name,
+        'storage_limit': round(storage.storage_limit / (1024 * 1024 * 1024), 2),
+        'plan_expire_at': storage.plan_expire_at,
     }
