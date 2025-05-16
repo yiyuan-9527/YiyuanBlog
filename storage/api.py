@@ -1,10 +1,9 @@
-from datetime import datetime, timedelta, timezone
-
 from django.http import HttpRequest
 from django.shortcuts import get_object_or_404
 from ninja import Router
 from ninja.errors import HttpError
 
+from .models import Storage
 from .schemas import UpgradePlanIn
 
 router = Router()
@@ -49,19 +48,16 @@ def upgrade_plan(request: HttpRequest, payload: UpgradePlanIn) -> tuple[int, dic
     升級用戶方案
     """
     user = request.auth
-    storage = get_object_or_404(user=user)
+    storage = get_object_or_404(Storage, user=user)
 
     if payload.new_plan not in storage.PlanChoices.values:
-        raise HttpError(400, '無效的方案名稱')
+        raise HttpError(400, '無效的方案')
 
     if storage.plan_name == payload.new_plan:
         raise HttpError(400, '已經是該方案了')
 
-    # 設定新方案與到期時間
-    storage.plan_name = payload.new_plan
-    storage.plan_expire_at = datetime.now(timezone.utc) + timedelta(minutes=3)
-    storage.is_paid = True
-    storage.save()
+    if not storage.upgrade_to(payload.new_plan):
+        raise HttpError(400, '升級方案失敗')
 
     return 200, {
         'status': 'success',

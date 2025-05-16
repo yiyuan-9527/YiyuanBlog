@@ -1,6 +1,11 @@
-from django.db import models
+from datetime import datetime, timedelta, timezone
 
+from django.db import models
+from enum import Enum
 from user.models import User
+
+class TEST(Enum):
+    QQQ = 'qqq','免費方案'
 
 
 class Storage(models.Model):
@@ -39,6 +44,23 @@ class Storage(models.Model):
         return f"{self.user.username}'s Storage Usage"
 
     def save(self, *args, **kwargs):
+        """
+        預設儲存空間上限
+        """
         if not self.storage_limit:
             self.storage_limit = self.PLAN_STORAGE_LIMIT.get(self.plan_name, 0)
         super().save(*args, **kwargs)
+
+    def upgrade_to(self, new_plan: str):
+        """
+        升級方案
+        :param plan_name: 方案名稱
+        """
+        if new_plan in self.PlanChoices.values:
+            self.plan_name = new_plan
+            self.storage_limit = self.PLAN_STORAGE_LIMIT.get(new_plan, 0)
+            self.plan_expire_at = datetime.now(timezone.utc) + timedelta(minutes=3)
+            self.is_paid = True
+            self.save()
+            return True
+        return False
