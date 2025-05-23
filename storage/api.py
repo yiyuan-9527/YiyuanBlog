@@ -56,6 +56,7 @@ def upgrade_plan(request: HttpRequest, payload: UpgradePlanIn) -> tuple[int, dic
     if storage.plan_name == payload.new_plan:
         raise HttpError(400, '已經是該方案了')
 
+    # 升級邏輯
     if not storage.upgrade_to(payload.new_plan):
         raise HttpError(400, '升級方案失敗')
 

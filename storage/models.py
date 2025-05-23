@@ -1,11 +1,13 @@
 from datetime import datetime, timedelta, timezone
+from enum import Enum
 
 from django.db import models
-from enum import Enum
+
 from user.models import User
 
+
 class TEST(Enum):
-    QQQ = 'qqq','免費方案'
+    QQQ = 'qqq', '免費方案'
 
 
 class Storage(models.Model):
@@ -64,3 +66,17 @@ class Storage(models.Model):
             self.save()
             return True
         return False
+
+    def downgrade_to_free(self):
+        """
+        降級方案
+        """
+        if self.plan_name == self.PlanChoices.FREE:
+            return False
+        self.plan_name = self.PlanChoices.FREE
+        self.storage_limit = self.PLAN_STORAGE_LIMIT.get(self.plan_name, 0)
+        self.plan_expire_at = None
+        self.is_paid = False
+        self.save()
+        print(f'降級方案成功: {self.plan_name}')
+        return True
