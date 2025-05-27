@@ -1,7 +1,7 @@
 from django.conf import settings
 from django.contrib.auth import authenticate
 from django.http import HttpRequest
-from ninja import Router
+from ninja import File, Router, UploadedFile
 from ninja.errors import HttpError
 
 from user.models import User
@@ -24,7 +24,7 @@ router = Router()
 
 
 @router.get(
-    path='/users/',
+    path='/',
     response=list[str],
     summary='取得使用者列表',
 )
@@ -39,7 +39,7 @@ def get_users(request: HttpRequest) -> list[str]:
 
 
 @router.post(
-    path='/users/register/',
+    path='register/',
     response={201: dict},
     summary='新增使用者(註冊)',
     auth=None,
@@ -75,7 +75,7 @@ def register_user(request: HttpRequest, payload: CreateUserRequest) -> tuple[int
 
 
 @router.post(
-    path='/users/login/',
+    path='login/',
     response={201: dict},
     summary='使用者登入',
     auth=None,
@@ -103,7 +103,7 @@ def login_user(request: HttpRequest, payload: LoginRequest) -> tuple[int, dict]:
 
 
 @router.post(
-    path='/users/logout/',
+    path='logout/',
     response={200: dict},
     summary='使用者登出',
 )
@@ -119,7 +119,7 @@ def logut_user(request: HttpRequest) -> dict[str, str]:
 
 
 @router.post(
-    path='/users/refresh/',
+    path='jwt-token/refresh/',
     response={200: dict},
     summary='刷新 token',
     auth=None,
@@ -137,7 +137,7 @@ def refresh(request: HttpRequest, payload: RefreshTokenRequest) -> dict[str, str
 
 
 @router.post(
-    path='/users/verify-email/',
+    path='verify-email/',
     response={200: dict},
     summary='信箱驗證信',
     auth=None,
@@ -160,3 +160,18 @@ def verify_email(request: HttpRequest, payload: VerifyEmailRequest) -> dict[str,
         'status': 'success',
         'message': '驗證成功',
     }
+
+
+@router.post(
+    path='update/avatar/',
+    response={200: dict},
+    summary='更新使用者頭像',
+)
+def update_avatar(
+    request: HttpRequest, file: UploadedFile = File()
+) -> tuple[int, dict]:
+    """
+    更新使用者頭像
+    """
+    user = request.auth
+    

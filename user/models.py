@@ -1,5 +1,16 @@
 from django.contrib.auth.models import AbstractUser
+from django.core.validators import FileExtensionValidator
 from django.db import models
+
+
+# 頭像上傳路徑設置
+def avatar_upload_path(instance: models.Model, filename: str) -> str:
+    """
+    頭像圖片儲存路徑
+    """
+    user_id = str(instance.id)
+
+    return f'user_{user_id}/avatar/{filename}'
 
 
 # 自定義的 User 模型, 繼承自 AbstractUser
@@ -8,7 +19,11 @@ class User(AbstractUser):
     email = models.EmailField(unique=True)  # 強制唯一的 email
     password = models.CharField(max_length=128)  # 強制密碼長度
     bio = models.TextField(null=True)  # 個人簡介欄位（可選）
-    avatar = models.ImageField(upload_to='avatars/', null=True)
+    avatar = models.ImageField(  # 頭像圖片欄位
+        upload_to=avatar_upload_path,
+        null=True,
+        validators=[FileExtensionValidator(allowed_extensions=['jpg', 'jpeg', 'png'])],
+    )
     is_active = models.BooleanField(default=False)  # 信箱驗證欄
 
     USERNAME_FIELD = 'email'  # 使用 email 作為登入的識別欄位
