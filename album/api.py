@@ -96,8 +96,8 @@ def upload_album_image(
     saved_images = []
     for image in images:
         # 驗證圖片格式和大小
-        vaild, error = is_valid_image(image)
-        if not vaild:
+        valid, error = is_valid_image(image)
+        if not valid:
             raise HttpError(400, error)
 
         # 重新命名
