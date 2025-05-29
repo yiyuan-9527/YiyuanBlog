@@ -1,5 +1,7 @@
 from pathlib import Path
 
+from celery.schedules import crontab
+
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -88,6 +90,29 @@ DATABASES = {
         'HOST': 'localhost',
         'PORT': '5432',
     }
+}
+
+# Celery + redis settings
+CELERY_BROKER_URL = 'redis://localhost:6379/0'
+CELERY_RESULT_BACKEND = 'redis://localhost:6379/1'
+CELERY_ACCEPT_CONTENT = ['json']
+CELERY_TASK_SERIALIZER = 'json'
+CELERY_RESULT_SERIALIZER = 'json'
+CELERY_RESULT_EXPIRES = 3600
+CELERY_TIMEZONE = 'Asia/Taipei'
+
+# beat 設定, 定時任務
+CELERY_BEAT_SCHEDULE = {
+    # 測試用
+    'leebai-every-minute': {
+        'task': 'storage.tasks.leetest',
+        'schedule': crontab(minute='*/1'),
+    },
+    # 每日0點檢查用戶方案, 若到期就降級到免費方案
+    'storage-plancheck-every-day': {
+        'task': 'storage.tasks.storage_plan_check',
+        'schedule': crontab(minute='*/1'),  # 測試用, 每分鐘執行一次
+    },
 }
 
 

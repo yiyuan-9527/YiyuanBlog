@@ -1,14 +1,23 @@
+from pathlib import Path
+
 from django.conf import settings
 from django.contrib.auth import authenticate
+from django.core.files.base import ContentFile
 from django.http import HttpRequest
-from ninja import Router
+from ninja import File, Router, UploadedFile
 from ninja.errors import HttpError
 
+from shared.images_utils import (
+    is_valid_image,
+    rename_file,
+)
 from user.models import User
 from user.schemas import (
     CreateUserRequest,
     LoginRequest,
+    PrivateUserInfoOut,
     RefreshTokenRequest,
+    UpdateUserInfoIn,
     VerifyEmailRequest,
 )
 from user.utils import EmailVerificationService, create_user_folder
@@ -24,7 +33,7 @@ router = Router()
 
 
 @router.get(
-    path='/users/',
+    path='/',
     response=list[str],
     summary='取得使用者列表',
 )
@@ -38,8 +47,24 @@ def get_users(request: HttpRequest) -> list[str]:
     return [user.email for user in users]
 
 
+@router.get(
+    path='me/',
+    response=PrivateUserInfoOut,
+    summary='取得使用者資訊',
+)
+def get_current_user_info(request: HttpRequest) -> PrivateUserInfoOut:
+    """
+    取得當前使用者資訊
+    """
+    if not request.auth:
+        raise HttpError(401, '請先登入')
+
+    user = request.auth
+    return user
+
+
 @router.post(
-    path='/users/register/',
+    path='register/',
     response={201: dict},
     summary='新增使用者(註冊)',
     auth=None,
@@ -75,7 +100,7 @@ def register_user(request: HttpRequest, payload: CreateUserRequest) -> tuple[int
 
 
 @router.post(
-    path='/users/login/',
+    path='login/',
     response={201: dict},
     summary='使用者登入',
     auth=None,
@@ -103,7 +128,7 @@ def login_user(request: HttpRequest, payload: LoginRequest) -> tuple[int, dict]:
 
 
 @router.post(
-    path='/users/logout/',
+    path='logout/',
     response={200: dict},
     summary='使用者登出',
 )
@@ -119,7 +144,7 @@ def logut_user(request: HttpRequest) -> dict[str, str]:
 
 
 @router.post(
-    path='/users/refresh/',
+    path='jwt-token/refresh/',
     response={200: dict},
     summary='刷新 token',
     auth=None,
@@ -137,7 +162,7 @@ def refresh(request: HttpRequest, payload: RefreshTokenRequest) -> dict[str, str
 
 
 @router.post(
-    path='/users/verify-email/',
+    path='verify-email/',
     response={200: dict},
     summary='信箱驗證信',
     auth=None,
@@ -159,4 +184,86 @@ def verify_email(request: HttpRequest, payload: VerifyEmailRequest) -> dict[str,
     return {
         'status': 'success',
         'message': '驗證成功',
+    }
+
+
+@router.post(
+    path='update/{int:user_id}/avatar/',
+    response={200: dict},
+    summary='更新使用者頭像',
+)
+def update_avatar(
+    request: HttpRequest, user_id: int, file: UploadedFile = File()
+) -> tuple[int, dict]:
+    """
+    更新使用者頭像
+    """
+
+    if user_id != request.auth.id:
+        raise HttpError(403, '無權限更新其他使用者的頭像')
+
+    # 取得用戶實例
+    user = request.auth
+
+    # 獲取舊頭像的絕對路徑
+    old_avatar_path = None
+    if user.avatar:
+        old_avatar_path = Path(user.avatar.path)
+
+    # 檢查檔案格式和大小
+    valiad, error = is_valid_image(file)
+    if not valiad:
+        raise HttpError(400, error)
+
+    # 重新命名檔案
+    new_filename = rename_file(file.name)
+    file_content = ContentFile(file.read(), name=new_filename)
+
+    try:
+        # 儲存用戶新頭像
+        user.avatar.save(new_filename, file_content, save=True)
+        print(f'使用者 {user_id} 的頭像已更新: {user.avatar.url}')
+
+        # 利用路由, 刪除舊頭像
+        if old_avatar_path and old_avatar_path.exists():
+            old_avatar_path.unlink()
+            print(f'刪除舊頭像: {old_avatar_path}')
+
+    except OSError as e:
+        raise HttpError(400, f'無法儲存頭像: {e}')
+
+    return 200, {
+        'status': 'success',
+        'user_id': user.id,
+        'avatar_url': user.avatar.url,
+    }
+
+
+@router.patch(
+    path='update/{int:user_id}/info/',
+    response={200: dict},
+    summary='更新使用者資訊',
+)
+def update_user_info(
+    request: HttpRequest, user_id: int, payload: UpdateUserInfoIn
+) -> tuple[int, dict]:
+    """
+    更新使用者資訊
+    """
+    if user_id != request.auth.id:
+        raise HttpError(403, '無權限更新其他使用者的資訊')
+
+    user = request.auth
+
+    try:
+        # 更新使用者資訊
+        user.username = payload.nickname
+        user.save()
+        print(f'使用者 {user_id} 的資訊已更新')
+    except Exception as e:
+        raise HttpError(400, f'無法更新使用者資訊: {e}')
+
+    return 200, {
+        'status': 'success',
+        'user_id': user.id,
     }

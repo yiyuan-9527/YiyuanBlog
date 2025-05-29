@@ -20,7 +20,7 @@ from post.utils import (
 )
 from shared.images_utils import (
     is_valid_image,
-    process_image_to_webp,
+    rename_file,
 )
 
 router = Router()
@@ -120,10 +120,10 @@ def upload_test_image(  # files 是前端請求的 key, 這裡要對應
         if not vaild:
             raise HttpError(400, error)
 
-        new_filename, webp_bytes = process_image_to_webp(file)
+        new_filename = rename_file(file.name)
 
         try:
-            image_file = ContentFile(webp_bytes, name=new_filename)
+            image_file = ContentFile(file.read(), name=new_filename)
 
             # 將圖片存至資料庫
             post_image = PostImage.objects.create(

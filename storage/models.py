@@ -1,3 +1,5 @@
+from datetime import datetime, timedelta, timezone
+
 from django.db import models
 
 from user.models import User
@@ -17,12 +19,12 @@ class Storage(models.Model):
         PlanChoices.PREMIUM: 1024 * 1024 * 1024 * 800,  # 800 GB
     }
 
-    user = models.OneToOneField(
+    user = models.OneToOneField(  # 使用者
         User, on_delete=models.CASCADE, related_name='storage_usage'
     )
-    used_storage = models.BigIntegerField(default=0)
+    used_storage = models.BigIntegerField(default=0)  # 已使用的儲存空間
     storage_limit = models.BigIntegerField(blank=True)  # 儲存空間上限
-    is_paid = models.BooleanField(default=False)  # 是否為付費會員
+    is_paid = models.BooleanField(default=False)  # 是否為付費會員, 待刪除!
     plan_name = models.CharField(  # 方案名稱
         max_length=10,
         choices=PlanChoices.choices,
@@ -39,6 +41,37 @@ class Storage(models.Model):
         return f"{self.user.username}'s Storage Usage"
 
     def save(self, *args, **kwargs):
+        """
+        預設儲存空間上限
+        """
         if not self.storage_limit:
             self.storage_limit = self.PLAN_STORAGE_LIMIT.get(self.plan_name, 0)
         super().save(*args, **kwargs)
+
+    def upgrade_to(self, new_plan: str):
+        """
+        升級方案
+        :param plan_name: 方案名稱
+        """
+        if new_plan in self.PlanChoices.values:
+            self.plan_name = new_plan
+            self.storage_limit = self.PLAN_STORAGE_LIMIT.get(new_plan, 0)
+            self.plan_expire_at = datetime.now(timezone.utc) + timedelta(minutes=3)
+            self.is_paid = True
+            self.save()
+            return True
+        return False
+
+    def downgrade_to_free(self):
+        """
+        降級方案
+        """
+        if self.plan_name == self.PlanChoices.FREE:
+            return False
+        self.plan_name = self.PlanChoices.FREE
+        self.storage_limit = self.PLAN_STORAGE_LIMIT.get(self.plan_name, 0)
+        self.plan_expire_at = None
+        self.is_paid = False
+        self.save()
+        print(f'降級方案成功: {self.plan_name}')
+        return True

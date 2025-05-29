@@ -1,11 +1,8 @@
 import mimetypes
 import uuid
-from io import BytesIO
 from pathlib import Path
 
 from ninja import UploadedFile
-from ninja.errors import HttpError
-from PIL import Image
 
 # 上傳圖片限制
 ALLOWED_IMAGE_FORMATS = {'image/jpeg', 'image/jpg', 'image/png'}
@@ -38,6 +35,7 @@ def rename_file(original_filename: str) -> str:
     """
     # 檔案名稱,不包含副檔名
     original_stem = Path(original_filename).stem
+
     # 副檔名
     original_suffix = Path(original_filename).suffix
 
@@ -47,24 +45,25 @@ def rename_file(original_filename: str) -> str:
     return new_filename
 
 
-def process_image_to_webp(file: UploadedFile) -> tuple[str, bytes]:
-    """
-    將圖片轉換為 WebP 格式, 在記憶體中(DRAM)處理圖片
-    """
-    # 檔案名稱,不包含副檔名
-    original_stem = Path(file.name).stem
-    # 產生不重複的檔名
-    unique_name = rename_file(original_stem + '.webp')
+# 棄用
+# def process_image_to_webp(file: UploadedFile) -> tuple[str, bytes]:
+#     """
+#     將圖片轉換為 WebP 格式, 在記憶體中(DRAM)處理圖片
+#     """
+#     # 檔案名稱,不包含副檔名
+#     original_stem = Path(file.name).stem
+#     # 產生不重複的檔名
+#     unique_name = rename_file(original_stem + '.webp')
 
-    try:
-        image = Image.open(file)
-    except Exception as e:
-        raise HttpError(400, f'無法處理圖片: {e}')
+#     try:
+#         image = Image.open(file)
+#     except Exception as e:
+#         raise HttpError(400, f'無法處理圖片: {e}')
 
-    image = image.convert('RGB')
-    # 建立記憶體的暫存物件
-    buffer = BytesIO()
-    # 將圖片存進記憶體的暫存物件, 並轉換為 WebP 格式
-    image.save(buffer, format='WEBP', quality=80)
-    # 返回 名稱, 暫存物件的內容
-    return unique_name, buffer.getvalue()
+#     image = image.convert('RGB')
+#     # 建立記憶體的暫存物件
+#     buffer = BytesIO()
+#     # 將圖片存進記憶體的暫存物件, 並轉換為 WebP 格式
+#     image.save(buffer, format='WEBP', quality=80)
+#     # 返回 名稱, 暫存物件的內容
+#     return unique_name, buffer.getvalue()
