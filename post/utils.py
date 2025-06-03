@@ -16,7 +16,10 @@ from post.models import (
 
 # 上傳圖片限制
 ALLOWED_IMAGE_FORMATS = {'image/jpeg', 'image/jpg', 'image/png'}
-MAX_FILE_SIZE = 3 * 1024 * 1024
+MAX_IMAGE_SIZE = 1024 * 1024 * 3  # 3MB
+# 上傳影片限制
+ALLOWED_VIDEO_FORMATS = {'video/mp4'}
+MAX_VIDEO_SIZE = 1024 * 1024 * 500  # 500MB
 
 
 def get_or_create_tag(tag_text: str) -> Tag:
@@ -62,7 +65,7 @@ def is_valid_image(file: UploadedFile) -> tuple[bool, str]:
             False,
             f'不支援的圖片格式: {mime_type}, 請上傳 jpg, jpeg, png 格式的圖片',
         )
-    if file.size > MAX_FILE_SIZE:
+    if file.size > MAX_IMAGE_SIZE:
         return False, f'{file.name}大小超過 3MB, 請上傳小於 3MB 的圖片'
 
     return True, None
@@ -84,6 +87,7 @@ def rename_file(original_filename: str) -> str:
     return new_filename
 
 
+# 先棄用
 def process_image_to_webp(file: UploadedFile) -> tuple[str, bytes]:
     """
     將圖片轉換為 WebP 格式, 在記憶體中(DRAM)處理圖片
