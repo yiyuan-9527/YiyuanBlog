@@ -1,7 +1,9 @@
+from datetime import datetime
 from typing import Any, Dict, List
 
 from ninja import Field, Schema
-from pydantic import HttpUrl
+
+from .models import Post
 
 
 class _AuthorInfo(Schema):
@@ -10,8 +12,29 @@ class _AuthorInfo(Schema):
     """
 
     id: int = Field(examples=[1])
-    username: str = Field(examples=['Alice'])
+    username: str | None = Field(examples=['Alice'])
     email: str = Field(examples=['alice@example.com'])
+    avatar_url: str | None = Field(examples=['https://example.com/avatar.jpg'])
+
+
+class PostListOut(Schema):
+    """
+    文章列表輸出
+    """
+
+    # alias欄位攤平
+    author_name: str = Field(alias='author.username', examples=['寶淇'])
+    author_avatar: str | None = Field(
+        alias='author.avatar', examples=['https://example.com/avatar.jpg']
+    )
+    updated_at: datetime = Field(examples=['2023-10-01T12:00:00Z'])
+    title: str = Field(examples=['文章標題'])
+    summary: str | None = Field(examples=['文章摘要'])
+    thumbnail_url: str | None = Field(examples='https://example.com/thumbnail.jpg')
+
+    @staticmethod
+    def resolve_updated_at(obj: Post) -> str:
+        return obj.updated_at.strftime('%Y-%m-%d')
 
 
 class UpdatePostContentIn(Schema):
@@ -20,20 +43,28 @@ class UpdatePostContentIn(Schema):
     """
 
     title: str | None = Field(default=None, max_length=255, examples=['title'])
-    content: Dict[str, Any] | None = Field(default=None, examples=['HTML content'])
-    summary: str | None = Field(examples=['文章摘要'])
-    # 這裡的 List[HttpUrl] 表示可以傳遞多個圖片 URL
-    image_url: List[HttpUrl] | None = Field(
+    content: Dict[str, Any] | None = Field(
         default=None,
-        examples=[
-            'https://example.com/image.jpg',
-        ],
+        examples={
+            'type': 'doc',
+            'content': [
+                {
+                    'type': 'paragraph',
+                    'content': [
+                        {
+                            'type': 'text',
+                            'text': '文章內容',
+                        },
+                    ],
+                }
+            ],
+        },
     )
 
 
 class UpdatePostTagIn(Schema):
     """
-    更新文章標籤, 分類
+    更新分類、標籤
     """
 
     # category_slug: str | None = Field(default=None, examples=['game'])
@@ -42,7 +73,7 @@ class UpdatePostTagIn(Schema):
 
 class PostDetailOut(Schema):
     """
-    文章內容輸出
+    單篇文章內容輸出
     """
 
     id: int = Field(examples=[1])
@@ -58,13 +89,10 @@ class PostDetailOut(Schema):
     status: str = Field(examples=['draft', 'published', 'private'])
 
 
-class PostListOut(Schema):
+# 複合頁面
+class HomePageOut(Schema):
     """
-    文章列表輸出
+    首頁輸出
     """
 
-    id: int = Field(examples=[1])
-    author: _AuthorInfo = Field(examples=['作者'])
-    title: str = Field(examples=['文章標題'])
-    summary: str | None = Field(examples=['文章摘要'])
-    thumbnail_url: str | None = Field(examples='https://example.com/thumbnail.jpg')
+    posts: List[PostListOut] = Field(examples=['文章列表'])

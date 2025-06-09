@@ -2,9 +2,10 @@ from typing import List
 
 from django.core.files.base import ContentFile
 from django.db import transaction
+from django.db.models import QuerySet
 from django.http import HttpRequest
 from django.shortcuts import get_object_or_404
-from ninja import File, Router, UploadedFile
+from ninja import File, Query, Router, UploadedFile
 from ninja.errors import HttpError
 
 from post.models import (
@@ -13,9 +14,13 @@ from post.models import (
     PostVideo,
 )
 from post.schemas import (
+    PostDetailOut,
+    PostFilterSchema,
+    PostListOut,
     UpdatePostContentIn,
     UpdatePostTagIn,
 )
+from post.services import ProseMirrorContentExtrator
 from post.utils import (
     update_post_tags,
 )
@@ -27,6 +32,31 @@ from shared.images_utils import (
 from storage.services import StorageService
 
 router = Router()
+
+
+@router.get(
+    path='{int:post_id}/',
+    response=PostDetailOut,
+    summary='取得單篇文章內容',
+)
+def get_post_detail(request: HttpRequest, post_id: int) -> PostDetailOut:
+    """
+    取得單篇文章內容
+    """
+
+
+@router.get(
+    path='text/list/',
+    response=list[PostListOut],
+    summary='取得文章列表',
+)
+def get_post_list(
+    request: HttpRequest, filters: PostFilterSchema = Query()
+) -> QuerySet[Post]:
+    """
+    取得文章列表
+    """
+    
 
 
 @router.post(
@@ -50,17 +80,18 @@ def create_post(request: HttpRequest) -> tuple[int, dict]:
     return 201, {'status': 'success', 'post_id': post.id}
 
 
-@router.put(
+@router.patch(
     path='update/{int:post_id}/',
-    response={201: dict},
-    summary='更新文章',
+    response={200: dict},
+    summary='文章及時更新',
 )
 def upload_post(
     request: HttpRequest, post_id: int, payload: UpdatePostContentIn
 ) -> tuple[int, dict]:
     """
-    更新文章內容
+    文章即時更新
     """
+
     # 取得指定文章
     try:
         post = get_object_or_404(Post, id=post_id)
@@ -72,21 +103,25 @@ def upload_post(
     for attr, value in payload.dict().items():
         setattr(post, attr, value)
     post.save()
-    print(f'更新成功: {post.title}')
-    return 201, {'status': 'success', 'post_id': post.id}
+    print(f'文章及時更新成功: {post.title}')
+
+    return 200, {
+        'status': 'success',
+        'post_id': post.id,
+    }
 
 
-@router.put(
+@router.patch(
     path='update/{int:post_id}/tags/',
-    response={201: dict},
-    summary='更新文章標籤',
+    response={200: dict},
+    summary='更新文章標籤, 產生摘要, 縮圖',
 )
 @transaction.atomic  # 此 api 有原子性
 def upload_post_tags(
     request: HttpRequest, post_id: int, payload: UpdatePostTagIn
 ) -> tuple[int, dict]:
     """
-    更新文章標籤
+    更新文章標籤, 產生摘要, 縮圖
     """
     post = get_object_or_404(Post, id=post_id)
 
@@ -94,10 +129,26 @@ def upload_post_tags(
     if post.author != request.auth:
         raise HttpError(403, '無權限修改此文章')
 
+    # 標籤不為空的話, 更新文章標籤
     if payload.tags is not None:
         update_post_tags(post, payload.tags)
 
-    return 201, {'status': 'success', 'post_id': post.id}
+    # 產生文章摘要和縮圖
+    if post.content is not None:
+        extracted_summary = ProseMirrorContentExtrator.extract_plain_text(post.content)
+        extracted_thumnail_url = ProseMirrorContentExtrator.extract_first_image_url(
+            post.content
+        )
+        post.summery = extracted_summary[:200]  # 限制摘要長度為 200 字
+        post.thumbnail_url = extracted_thumnail_url
+    post.save()
+
+    print(f'文章標籤,摘要,縮圖更新成功: {post.title}')
+
+    return 200, {
+        'status': 'success',
+        'post_id': post.id,
+    }
 
 
 @router.post(
