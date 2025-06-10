@@ -23,13 +23,13 @@ class PostListOut(Schema):
     """
 
     # alias欄位攤平
-    author_name: str = Field(alias='author.username', examples=['寶淇'])
+    author_name: str | None = Field(alias='author.username', examples=['寶淇'])
     author_avatar: str | None = Field(
         alias='author.avatar', examples=['https://example.com/avatar.jpg']
     )
     updated_at: datetime = Field(examples=['2023-10-01T12:00:00Z'])
     title: str = Field(examples=['文章標題'])
-    summary: str | None = Field(examples=['文章摘要'])
+    summery: str | None = Field(examples=['文章摘要'])  # 拼錯 是a 不是e
     thumbnail_url: str | None = Field(examples='https://example.com/thumbnail.jpg')
 
     @staticmethod
@@ -87,12 +87,3 @@ class PostDetailOut(Schema):
     created_at: str = Field(examples=['2023-10-01T12:00:00Z'])
     updated_at: str = Field(examples=['2023-10-01T12:00:00Z'])
     status: str = Field(examples=['draft', 'published', 'private'])
-
-
-# 複合頁面
-class HomePageOut(Schema):
-    """
-    首頁輸出
-    """
-
-    posts: List[PostListOut] = Field(examples=['文章列表'])

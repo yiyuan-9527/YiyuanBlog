@@ -2,10 +2,9 @@ from typing import List
 
 from django.core.files.base import ContentFile
 from django.db import transaction
-from django.db.models import QuerySet
 from django.http import HttpRequest
 from django.shortcuts import get_object_or_404
-from ninja import File, Query, Router, UploadedFile
+from ninja import File, Router, UploadedFile
 from ninja.errors import HttpError
 
 from post.models import (
@@ -15,8 +14,6 @@ from post.models import (
 )
 from post.schemas import (
     PostDetailOut,
-    PostFilterSchema,
-    PostListOut,
     UpdatePostContentIn,
     UpdatePostTagIn,
 )
@@ -43,20 +40,7 @@ def get_post_detail(request: HttpRequest, post_id: int) -> PostDetailOut:
     """
     取得單篇文章內容
     """
-
-
-@router.get(
-    path='text/list/',
-    response=list[PostListOut],
-    summary='取得文章列表',
-)
-def get_post_list(
-    request: HttpRequest, filters: PostFilterSchema = Query()
-) -> QuerySet[Post]:
-    """
-    取得文章列表
-    """
-    
+    pass
 
 
 @router.post(

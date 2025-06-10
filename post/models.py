@@ -39,7 +39,7 @@ class Post(models.Model):
         help_text='文章內容, 可以是 HTML 或其他格式的內容',
     )
 
-    summery = models.TextField(
+    summery = models.TextField(  # 拼錯, 是a 不是e
         blank=True,
         null=True,
         help_text='文章摘要, 用於 SEO 或文章列表顯示',

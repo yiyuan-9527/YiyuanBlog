@@ -41,6 +41,7 @@ INSTALLED_APPS = [
     'post',
     'album',
     'storage',
+    'core',
 ]
 
 # !重要 不使用內建的 auth.User, 要在第一次 migrate 前使用
