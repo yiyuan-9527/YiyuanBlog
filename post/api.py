@@ -10,20 +10,37 @@ from ninja.errors import HttpError
 from post.models import (
     Post,
     PostImage,
+    PostVideo,
 )
 from post.schemas import (
+    PostDetailOut,
     UpdatePostContentIn,
     UpdatePostTagIn,
 )
+from post.services import ProseMirrorContentExtrator
 from post.utils import (
     update_post_tags,
 )
 from shared.images_utils import (
     is_valid_image,
+    is_valid_video,
     rename_file,
 )
+from storage.services import StorageService
 
 router = Router()
+
+
+@router.get(
+    path='{int:post_id}/',
+    response=PostDetailOut,
+    summary='取得單篇文章內容',
+)
+def get_post_detail(request: HttpRequest, post_id: int) -> PostDetailOut:
+    """
+    取得單篇文章內容
+    """
+    pass
 
 
 @router.post(
@@ -47,17 +64,18 @@ def create_post(request: HttpRequest) -> tuple[int, dict]:
     return 201, {'status': 'success', 'post_id': post.id}
 
 
-@router.put(
+@router.patch(
     path='update/{int:post_id}/',
-    response={201: dict},
-    summary='更新文章',
+    response={200: dict},
+    summary='文章及時更新',
 )
 def upload_post(
     request: HttpRequest, post_id: int, payload: UpdatePostContentIn
 ) -> tuple[int, dict]:
     """
-    更新文章內容
+    文章即時更新
     """
+
     # 取得指定文章
     try:
         post = get_object_or_404(Post, id=post_id)
@@ -69,21 +87,25 @@ def upload_post(
     for attr, value in payload.dict().items():
         setattr(post, attr, value)
     post.save()
-    print(f'更新成功: {post.title}')
-    return 201, {'status': 'success', 'post_id': post.id}
+    print(f'文章及時更新成功: {post.title}')
+
+    return 200, {
+        'status': 'success',
+        'post_id': post.id,
+    }
 
 
-@router.put(
+@router.patch(
     path='update/{int:post_id}/tags/',
-    response={201: dict},
-    summary='更新文章標籤',
+    response={200: dict},
+    summary='更新文章標籤, 產生摘要, 縮圖',
 )
 @transaction.atomic  # 此 api 有原子性
 def upload_post_tags(
     request: HttpRequest, post_id: int, payload: UpdatePostTagIn
 ) -> tuple[int, dict]:
     """
-    更新文章標籤
+    更新文章標籤, 產生摘要, 縮圖
     """
     post = get_object_or_404(Post, id=post_id)
 
@@ -91,10 +113,26 @@ def upload_post_tags(
     if post.author != request.auth:
         raise HttpError(403, '無權限修改此文章')
 
+    # 標籤不為空的話, 更新文章標籤
     if payload.tags is not None:
         update_post_tags(post, payload.tags)
 
-    return 201, {'status': 'success', 'post_id': post.id}
+    # 產生文章摘要和縮圖
+    if post.content is not None:
+        extracted_summary = ProseMirrorContentExtrator.extract_plain_text(post.content)
+        extracted_thumnail_url = ProseMirrorContentExtrator.extract_first_image_url(
+            post.content
+        )
+        post.summery = extracted_summary[:200]  # 限制摘要長度為 200 字
+        post.thumbnail_url = extracted_thumnail_url
+    post.save()
+
+    print(f'文章標籤,摘要,縮圖更新成功: {post.title}')
+
+    return 200, {
+        'status': 'success',
+        'post_id': post.id,
+    }
 
 
 @router.post(
@@ -143,4 +181,66 @@ def upload_test_image(  # files 是前端請求的 key, 這裡要對應
     return 201, {
         'status': 'success',
         'file_name': saved_files,
+    }
+
+
+@router.post(
+    path='upload/{int:post_id}/videos/',
+    response={200: dict},
+    summary='文章上傳影片',
+)
+@transaction.atomic
+def upload_test_video(
+    request: HttpRequest, post_id: int, files: List[UploadedFile] = File()
+) -> tuple[int, dict]:
+    """
+    上傳影片
+    檔案限制: mp4
+    大小限制: 500MB
+    """
+    user = request.auth
+    print('上傳影片的使用者:', user)
+    post = get_object_or_404(Post, id=post_id)
+
+    saved_files = []
+
+    # 檢查使用者空間是否足夠
+    total_upload_size = sum(file.size for file in files)
+    user_space = StorageService.check_user_limit(user, total_upload_size)
+    if not user_space:
+        StorageService.exceeded_storage_limit(user)
+
+    # 處理上傳的影片
+    saved_files = []
+    for file in files:
+        # 驗證影片格式和大小
+        valid, error = is_valid_video(file)
+        if not valid:
+            raise HttpError(400, error)
+
+        # 重新命名
+        new_filename = rename_file(file.name)
+        video_file = ContentFile(file.read(), name=new_filename)
+
+        try:
+            # 將影片存至資料庫
+            post_video = PostVideo.objects.create(
+                post=post,
+                video=video_file,
+            )
+
+            # 設定 URL, 方便前端取得
+            file_url = request.build_absolute_uri(post_video.video.url)
+            saved_files.append(file_url)
+
+        except Exception as e:
+            raise HttpError(400, f'無法儲存檔案: {e}')
+
+        # 更新使用者儲存空間
+        StorageService.add_item_storage(user, total_upload_size)
+
+    return 200, {
+        'status': 'success',
+        'post_id': post.id,
+        'file_urls': saved_files,
     }

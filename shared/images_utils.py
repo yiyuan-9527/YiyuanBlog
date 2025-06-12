@@ -7,6 +7,9 @@ from ninja import UploadedFile
 # 上傳圖片限制
 ALLOWED_IMAGE_FORMATS = {'image/jpeg', 'image/jpg', 'image/png'}
 MAX_FILE_SIZE = 3 * 1024 * 1024
+# 上傳影片限制
+ALLOWED_VIDEO_FORMATS = {'video/mp4'}
+MAX_VIDEO_SIZE = 1024 * 1024 * 500  # 500MB
 
 
 def is_valid_image(file: UploadedFile) -> tuple[bool, str]:
@@ -24,6 +27,25 @@ def is_valid_image(file: UploadedFile) -> tuple[bool, str]:
         )
     if file.size > MAX_FILE_SIZE:
         return False, f'{file.name}大小超過 3MB, 請上傳小於 3MB 的圖片'
+
+    return True, None
+
+
+def is_valid_video(file: UploadedFile) -> tuple[bool, str]:
+    """
+    驗證影片格式和大小
+    """
+    mime_type, _ = mimetypes.guess_type(file.name)
+
+    if mime_type is None or not mime_type.startswith('video/'):
+        return False, '不支援的影片格式, 請上傳 mp4 格式的影片'
+    if mime_type not in ALLOWED_VIDEO_FORMATS:
+        return (
+            False,
+            f'不支援的影片格式: {mime_type}, 請上傳 mp4 格式的影片',
+        )
+    if file.size > MAX_VIDEO_SIZE:
+        return False, f'{file.name}大小超過 500MB, 請上傳小於 500MB 的影片'
 
     return True, None
 
