@@ -1,10 +1,10 @@
+from typing import List
+
 from django.http import HttpRequest
 from ninja import Router
 
 from post.models import Post
 from post.schemas import PostListOut
-
-from .schemas import HomePageOut
 
 router = Router()
 
@@ -21,35 +21,32 @@ def get_homepage_test(request: HttpRequest) -> PostListOut:
 
 
 @router.get(
-    path='homepage/',
-    response={200: HomePageOut},
-    summary='首頁',
+    path='homepage/postlist/',
+    response=List[PostListOut],
+    summary='首頁文章列表',
     auth=None,
 )
-def get_homepage(request: HttpRequest) -> tuple[int, HomePageOut]:
+def get_homepage(request: HttpRequest) -> List[PostListOut]:
     """
-    首頁
+    首頁文章列表
     """
 
-    # 取得文章清單
-    posts_queryset = Post.objects.select_related('author').order_by('-created_at')[:6]
-    #  把 QuerySet 轉換成 PostListOut 的列表
-    # posts_data = [PostListOut.from_orm(post) for post in posts_queryset]
-    posts_data = []
-    for post in posts_queryset:
-        post_data = PostListOut(
-            author_name=post.author.username or post.author.email,
-            author_avatar=post.author.avatar.url if post.author.avatar else None,
-            updated_at=post.updated_at.strftime('%Y-%m-%d'),
-            title=post.title,
-            summery=post.summery,  # 拼錯 是a 不是e
-            thumbnail_url=post.thumbnail_url,
-        )
-        posts_data.append(post_data)
+    # 根據建立時間取得文章列表，包含作者資訊
+    posts = Post.objects.select_related('author').order_by('-created_at')[:6]
+    print('返回首頁列表成功')
+    return posts
 
-    # print(f'posts_data 內容: {posts_data}')
 
-    # return 巢狀 JSON
-    return 200, HomePageOut(
-        posts=posts_data,
-    )
+@router.get(
+    path='homepage/highlight/',
+    response=List[PostListOut],
+    summary='首頁精選文章列表',
+    auth=None,
+)
+def get_homepage_highlight(request: HttpRequest) -> List[PostListOut]:
+    """
+    首頁精選文章列表
+    """
+
+    # 去掉沒有的縮圖文章
+    # posts = Post.objects.select_related('author').filter(thumbnail_url__)
