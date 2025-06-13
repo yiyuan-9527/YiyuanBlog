@@ -31,22 +31,28 @@ def get_homepage(request: HttpRequest) -> List[PostListOut]:
     首頁文章列表
     """
 
-    # 根據建立時間取得文章列表，包含作者資訊
+    # 根據建立時間取得文章列表，包含作者資訊, filter 要加權限
     posts = Post.objects.select_related('author').order_by('-created_at')[:6]
-    print('返回首頁列表成功')
+    print('返回首頁文章列表成功')
     return posts
 
 
 @router.get(
     path='homepage/highlight/',
     response=List[PostListOut],
-    summary='首頁精選文章列表',
+    summary='首頁精選列表',
     auth=None,
 )
 def get_homepage_highlight(request: HttpRequest) -> List[PostListOut]:
     """
-    首頁精選文章列表
+    首頁精選列表
     """
 
-    # 去掉沒有的縮圖文章
-    # posts = Post.objects.select_related('author').filter(thumbnail_url__)
+    # 沒有縮圖文章不要上, filter 要加權限
+    posts = (
+        Post.objects.select_related('author')
+        .filter(thumbnail_url__isnull=False)
+        .order_by('?')[:12]
+    )
+    print('返回首頁精選列表成功')
+    return posts

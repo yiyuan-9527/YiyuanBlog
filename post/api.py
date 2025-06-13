@@ -241,5 +241,5 @@ def upload_test_video(
     return 200, {
         'status': 'success',
         'post_id': post.id,
-        'file_urls': file_url,
+        'file_url': file_url,
     }

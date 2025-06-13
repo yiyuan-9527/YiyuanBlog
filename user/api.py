@@ -224,6 +224,9 @@ def update_avatar(
         user.avatar.save(new_filename, file_content, save=True)
         print(f'使用者 {user_id} 的頭像已更新: {user.avatar.url}')
 
+        # 設定絕對路徑url, 給前端使用
+        file_url = request.build_absolute_uri(user.avatar.url)
+
         # 利用路由, 刪除舊頭像
         if old_avatar_path and old_avatar_path.exists():
             old_avatar_path.unlink()
@@ -235,7 +238,7 @@ def update_avatar(
     return 200, {
         'status': 'success',
         'user_id': user.id,
-        'avatar_url': user.avatar.url,
+        'avatar_url': file_url,
     }
 
 
