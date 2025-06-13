@@ -3,7 +3,7 @@ from typing import Any, Dict, List
 
 from ninja import Field, Schema
 
-# from .models import Post
+from .models import Post
 
 
 class _AuthorInfo(Schema):
@@ -23,8 +23,10 @@ class PostListOut(Schema):
     """
 
     # 關聯的作者欄位
-    author_name: str | None = Field(examples=['寶淇'])
-    author_avatar: str | None = Field(examples=['https://example.com/avatar.jpg'])
+    author_name: str | None = Field(alias='author.username', examples=['寶淇'])
+    author_avatar: str | None = Field(
+        alias='author.avatar', examples=['https://example.com/avatar.jpg']
+    )
 
     # 文章欄位
     updated_at: datetime = Field(examples=['2023-10-01T12:00:00Z'])
@@ -32,17 +34,9 @@ class PostListOut(Schema):
     summery: str | None = Field(examples=['文章摘要'])  # 拼錯 是a 不是e
     thumbnail_url: str | None = Field(examples='https://example.com/thumbnail.jpg')
 
-    # @staticmethod
-    # def resolve_author_name(obj: Post) -> str:
-    #     return obj.author.username or obj.author.email
-
-    # @staticmethod
-    # def resolve_author_avatar(obj: Post) -> str | None:
-    #     return obj.author.avatar.url if obj.author.avatar.url else None
-
-    # @staticmethod
-    # def resolve_updated_at(obj: Post) -> str:
-    #     return obj.updated_at.strftime('%Y-%m-%d')
+    @staticmethod
+    def resolve_updated_at(obj: Post) -> str:
+        return obj.updated_at.strftime('%Y-%m-%d')
 
 
 class UpdatePostContentIn(Schema):

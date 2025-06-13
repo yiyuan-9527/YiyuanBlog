@@ -1,5 +1,3 @@
-from typing import List
-
 from django.core.files.base import ContentFile
 from django.db import transaction
 from django.http import HttpRequest
@@ -137,50 +135,57 @@ def upload_post_tags(
 
 @router.post(
     path='upload/{int:post_id}/images/',
-    response={201: dict},
+    response={200: dict},
     summary='文章上傳圖片',
 )
 def upload_test_image(  # files 是前端請求的 key, 這裡要對應
-    request: HttpRequest, post_id: int, files: List[UploadedFile] = File()
+    request: HttpRequest, post_id: int, file: UploadedFile = File()
 ) -> tuple[int, dict]:
     """
     上傳圖片
     檔案限制: jpg, jpeg, png
     大小限制: 3MB
     """
+    user = request.auth
     post = get_object_or_404(Post, id=post_id)
 
-    saved_files = []
+    # 檢查使用者空間是否足夠
+    user_space = StorageService.check_user_limit(user, file.size)
+    if not user_space:
+        StorageService.exceeded_storage_limit(user)
 
-    for file in files:
-        # 驗證圖片格式和大小
-        vaild, error = is_valid_image(file)
-        if not vaild:
-            raise HttpError(400, error)
+    # 處理上傳的照片
+    # 驗證圖片格式和大小
+    vaild, error = is_valid_image(file)
+    if not vaild:
+        raise HttpError(400, error)
 
-        new_filename = rename_file(file.name)
+    new_filename = rename_file(file.name)
 
-        try:
-            image_file = ContentFile(file.read(), name=new_filename)
+    try:
+        image_file = ContentFile(file.read(), name=new_filename)
 
-            # 將圖片存至資料庫
-            post_image = PostImage.objects.create(
-                post=post,
-                image=image_file,  # 檔案上傳的路徑在 models.py 裡面定義
-                is_cover=False,  # 是否為封面圖片
-            )
+        # 將圖片存至資料庫
+        post_image = PostImage.objects.create(
+            post=post,
+            image=image_file,  # 檔案上傳的路徑在 models.py 裡面定義
+            is_cover=False,  # 是否為封面圖片
+        )
 
-            # 設定 URL, 方便前端取得
-            # post_image 實例. image 欄位. url 屬性
-            file_url = request.build_absolute_uri(post_image.image.url)
-            saved_files.append(file_url)
+        # 設定 URL, 方便前端取得
+        # post_image 實例. image 欄位. url 屬性
+        file_url = request.build_absolute_uri(post_image.image.url)
 
-        except Exception as e:
-            raise HttpError(400, f'無法儲存檔案: {e}')
+    except Exception as e:
+        raise HttpError(400, f'無法儲存檔案: {e}')
 
-    return 201, {
+    # 更新使用者儲存空間
+    StorageService.add_item_storage(user, file.size)
+
+    return 200, {
         'status': 'success',
-        'file_name': saved_files,
+        'post_id': post.id,
+        'file_url': file_url,
     }
 
 
@@ -191,7 +196,7 @@ def upload_test_image(  # files 是前端請求的 key, 這裡要對應
 )
 @transaction.atomic
 def upload_test_video(
-    request: HttpRequest, post_id: int, files: List[UploadedFile] = File()
+    request: HttpRequest, post_id: int, file: UploadedFile = File()
 ) -> tuple[int, dict]:
     """
     上傳影片
@@ -202,45 +207,39 @@ def upload_test_video(
     print('上傳影片的使用者:', user)
     post = get_object_or_404(Post, id=post_id)
 
-    saved_files = []
-
     # 檢查使用者空間是否足夠
-    total_upload_size = sum(file.size for file in files)
-    user_space = StorageService.check_user_limit(user, total_upload_size)
+    user_space = StorageService.check_user_limit(user, file.size)
     if not user_space:
         StorageService.exceeded_storage_limit(user)
 
     # 處理上傳的影片
-    saved_files = []
-    for file in files:
-        # 驗證影片格式和大小
-        valid, error = is_valid_video(file)
-        if not valid:
-            raise HttpError(400, error)
+    # 驗證影片格式和大小
+    valid, error = is_valid_video(file)
+    if not valid:
+        raise HttpError(400, error)
 
-        # 重新命名
-        new_filename = rename_file(file.name)
-        video_file = ContentFile(file.read(), name=new_filename)
+    # 重新命名
+    new_filename = rename_file(file.name)
+    video_file = ContentFile(file.read(), name=new_filename)
 
-        try:
-            # 將影片存至資料庫
-            post_video = PostVideo.objects.create(
-                post=post,
-                video=video_file,
-            )
+    try:
+        # 將影片存至資料庫
+        post_video = PostVideo.objects.create(
+            post=post,
+            video=video_file,
+        )
 
-            # 設定 URL, 方便前端取得
-            file_url = request.build_absolute_uri(post_video.video.url)
-            saved_files.append(file_url)
+        # 設定 URL, 方便前端取得
+        file_url = request.build_absolute_uri(post_video.video.url)
 
-        except Exception as e:
-            raise HttpError(400, f'無法儲存檔案: {e}')
+    except Exception as e:
+        raise HttpError(400, f'無法儲存檔案: {e}')
 
-        # 更新使用者儲存空間
-        StorageService.add_item_storage(user, total_upload_size)
+    # 更新使用者儲存空間
+    StorageService.add_item_storage(user, file.size)
 
     return 200, {
         'status': 'success',
         'post_id': post.id,
-        'file_urls': saved_files,
+        'file_urls': file_url,
     }
