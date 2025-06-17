@@ -12,12 +12,13 @@ class Comment(models.Model):
         related_name='comments',
     )
     author = models.ForeignKey(
-        'User',
+        'user.User',
         on_delete=models.CASCADE,
         related_name='comments',
     )
     content = models.TextField()
-    # 巢狀留言
+
+    # 用於實現巢狀留言, 如果為 None, 表示是頂層留言
     parent = models.ForeignKey(
         'self',
         on_delete=models.CASCADE,
@@ -25,7 +26,6 @@ class Comment(models.Model):
         blank=True,
         related_name='replies',
     )
-    likes_count = models.IntegerField(default=0)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -35,11 +35,11 @@ class Comment(models.Model):
 
 class Like(models.Model):
     """
-    有夠讚
+    讚
     """
 
-    user = models.ForeginKey('User', on_delete=models.CASCADE)
-    comment = models.ForeginKey(
+    user = models.ForeignKey('user.User', on_delete=models.CASCADE)
+    comment = models.ForeignKey(
         'Comment', on_delete=models.CASCADE, related_name='likes'
     )
     created_at = models.DateField(auto_now_add=True)

@@ -45,6 +45,7 @@ class Post(models.Model):
         help_text='文章摘要, 用於 SEO 或文章列表顯示',
     )
     thumbnail_url = models.URLField(
+        max_length=1800,
         blank=True,
         null=True,
         help_text='文章縮圖 URL, 用於文章列表或社交媒體分享',
