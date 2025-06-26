@@ -48,6 +48,7 @@ class User(AbstractUser):
 
 # 追蹤 (Flollow) 模型
 class Follow(models.Model):
+    # related_name 是反向關係, 兩個欄位容易混淆
     follower = models.ForeignKey(
         'User', on_delete=models.CASCADE, related_name='following_relations'
     )
@@ -60,3 +61,20 @@ class Follow(models.Model):
 
     def __str__(self):
         return f'{self.follower.username} → {self.following.username}'
+
+
+# 收藏模型
+class Bookmark(models.Model):
+    user = models.ForeignKey(
+        'user.User', on_delete=models.CASCADE, related_name='bookmarks'
+    )
+    post = models.ForeignKey(
+        'post.Post', on_delete=models.CASCADE, related_name='bookmarked_by'
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:  # 影響 model migration 的唯一性約束
+        unique_together = ('user', 'post')
+
+    def __str__(self):
+        return f'{self.user.username} 收藏了 {self.post.title}'
