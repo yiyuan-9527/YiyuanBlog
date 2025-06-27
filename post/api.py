@@ -6,11 +6,13 @@ from ninja import File, Router, UploadedFile
 from ninja.errors import HttpError
 
 from post.models import (
+    Bookmark,
     Post,
     PostImage,
     PostVideo,
 )
 from post.schemas import (
+    BookmarkToggleOut,
     PostDetailOut,
     UpdatePostContentIn,
     UpdatePostTagIn,
@@ -242,4 +244,42 @@ def upload_test_video(
         'status': 'success',
         'post_id': post.id,
         'file_url': file_url,
+    }
+
+
+# =========== 收藏文章 ===========
+@router.post(
+    path='bookmark/toggle/{int:post_id}/',
+    response=BookmarkToggleOut,
+    summary='收藏或取消收藏文章',
+)
+def toggle_bookmark(request: HttpRequest, post_id: int) -> BookmarkToggleOut:
+    """
+    切換文章收藏狀態
+    - 如果尚未收藏, 則收藏文章
+    - 反之就取消收藏
+    """
+    user = request.auth
+    post = get_object_or_404(Post, id=post_id)
+
+    with transaction.atomic():
+        bookmark_obj, created = Bookmark.objects.get_or_create(
+            user=user,
+            post=post,
+        )
+
+        if created:
+            # 收藏文章
+            is_bookmarked = True
+        else:
+            # 取消收藏文章
+            bookmark_obj.delete()
+            is_bookmarked = False
+
+        # 重新計算收藏數
+        bookmark_count = post.bookmarked_by.count()
+
+    return {
+        'is_bookmarked': is_bookmarked,
+        'bookmark_count': bookmark_count,
     }

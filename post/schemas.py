@@ -89,3 +89,12 @@ class PostDetailOut(Schema):
     created_at: str = Field(examples=['2023-10-01T12:00:00Z'])
     updated_at: str = Field(examples=['2023-10-01T12:00:00Z'])
     status: str = Field(examples=['draft', 'published', 'private'])
+
+
+class BookmarkToggleOut(Schema):
+    """
+    切換收藏文章
+    """
+
+    is_bookmarked: bool = Field(examples=[True, False])
+    bookmark_count: int = Field(examples=[10, 0])

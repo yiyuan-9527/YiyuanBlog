@@ -288,7 +288,7 @@ def toggle_follow(request: HttpRequest, user_id: int) -> FollowToggleOut:
     - 反之取消追蹤
     """
     follower = request.auth
-    following = get_object_or_404('User', id=user_id)
+    following = get_object_or_404(User, id=user_id)
 
     # 不能追蹤自己
     if follower == following:

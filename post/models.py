@@ -112,3 +112,21 @@ class PostVideo(models.Model):
         validators=[FileExtensionValidator(allowed_extensions=['mp4'])],
     )
     uploaded_at = models.DateTimeField(auto_now_add=True)
+
+
+# =========== 收藏文章 ===========
+# 收藏模型
+class Bookmark(models.Model):
+    user = models.ForeignKey(
+        'user.User', on_delete=models.CASCADE, related_name='bookmarks'
+    )
+    post = models.ForeignKey(
+        'post.Post', on_delete=models.CASCADE, related_name='bookmarked_by'
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:  # 影響 model migration 的唯一性約束
+        unique_together = ('user', 'post')
+
+    def __str__(self):
+        return f'{self.user.username} 收藏了 {self.post.title}'
