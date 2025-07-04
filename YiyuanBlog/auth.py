@@ -18,15 +18,11 @@ REFSHE_TOKEN_EXPIRATION = 16  # 16 周
 
 
 class JWTAuth(HttpBearer):
-    # def __init__(self, *args, **kwargs):
-    #     super().__init__(*args, **kwargs)
-
     # 自行建立的 authenticate 方法
     def authenticate(self, request: HttpRequest, token: str) -> AbstractUser:
         try:
             # 解碼 token
             payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-            # print(f'Payload: {payload}')
 
             # 確認是訪問 token
             if payload.get('type') != 'access':
@@ -49,6 +45,10 @@ class JWTAuth(HttpBearer):
         except jwt.InvalidTokenError as e:
             print(f'失效 token: {e}')
             raise HttpError(401, f'失效 token: {str(e)}')
+
+
+class OptionalJWTAuth:
+    pass
 
 
 # 產生 access token

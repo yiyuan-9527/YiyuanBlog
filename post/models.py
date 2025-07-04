@@ -6,6 +6,7 @@ from django.db import models
 from user.models import User
 
 
+# 分類模型 未啟用!
 class Category(models.Model):
     name = models.CharField(max_length=100)
     slug = models.SlugField(unique=True, allow_unicode=True)
@@ -14,6 +15,7 @@ class Category(models.Model):
         return self.name
 
 
+# 標籤模型
 class Tag(models.Model):
     name = models.CharField(max_length=100)
     slug = models.SlugField(unique=True, allow_unicode=True)
@@ -31,6 +33,7 @@ class TagManagement(models.Model):
         return f'{self.post.title} - {self.tag.name}'
 
 
+# 文章模型
 class Post(models.Model):
     title = models.CharField(max_length=255)
     slug = models.SlugField(unique=True, null=True)
@@ -58,19 +61,46 @@ class Post(models.Model):
     )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
-    status = models.CharField(
+    status = models.CharField(  # 文章發布狀態
         max_length=20,
         choices=[
             ('draft', '草稿'),
             ('published', '已發布'),
-            ('private', '私密'),
         ],
         default='draft',
+    )
+    visibility = models.CharField(  # 文章可見性
+        max_length=50,
+        choices=[
+            ('public', '開放所有人'),
+            ('private', '只限本人'),
+            ('followers', ' 只限追蹤者'),
+            ('members', '只限會員'),
+        ],
+        default='public',
     )
     views_count = models.PositiveIntegerField(default=0)
 
     def __str__(self) -> str:
         return self.title
+
+
+class Like(models.Model):
+    """
+    讚
+    """
+
+    user = models.ForeignKey(
+        'user.User', on_delete=models.CASCADE, related_name='liked_posts'
+    )
+    post = models.ForeignKey('Post', on_delete=models.CASCADE, related_name='likes')
+    created_at = models.DateField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ('user', 'post')
+
+    def __str__(self) -> str:
+        return f'{self.user.username} 喜歡這篇文章 {self.post.title}'
 
 
 def post_image_path(instance: models, filename: str) -> str:
@@ -130,3 +160,4 @@ class Bookmark(models.Model):
 
     def __str__(self):
         return f'{self.user.username} 收藏了 {self.post.title}'
+ 
