@@ -7,26 +7,16 @@ from ninja import Router
 from post.models import Post
 from post.schemas import PostListOut
 from user.models import Follow
+from YiyuanBlog.auth import OptionalJWTAuth
 
 router = Router()
-
-
-@router.get(
-    path='homepage/test/',
-    response=PostListOut,
-    summary='首頁',
-    auth=None,
-)
-def get_homepage_test(request: HttpRequest) -> PostListOut:
-    post = Post.objects.first()
-    return post
 
 
 @router.get(
     path='homepage/postlist/',
     response=List[PostListOut],
     summary='首頁文章列表',
-    auth=None,
+    auth=OptionalJWTAuth(),  # 使用可選的 JWT 認證
 )
 def get_homepage(request: HttpRequest) -> List[PostListOut]:
     """
@@ -61,11 +51,11 @@ def get_homepage(request: HttpRequest) -> List[PostListOut]:
     path='homepage/highlight/',
     response=List[PostListOut],
     summary='首頁精選列表',
-    auth=None,
+    auth=OptionalJWTAuth(),
 )
 def get_homepage_highlight(request: HttpRequest) -> List[PostListOut]:
     """
-    首頁精選列表
+    首頁精選列表, 需要修改!!!!!
     """
 
     # 沒有縮圖文章不要上, filter 要加權限

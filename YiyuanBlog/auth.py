@@ -18,7 +18,11 @@ REFSHE_TOKEN_EXPIRATION = 16  # 16 周
 
 
 class JWTAuth(HttpBearer):
-    # 自行建立的 authenticate 方法
+    """
+    嚴格的 JWT 認證類別
+    - 嚴格認證, 使用者必須要登入
+    """
+
     def authenticate(self, request: HttpRequest, token: str) -> AbstractUser:
         try:
             # 解碼 token
@@ -37,9 +41,9 @@ class JWTAuth(HttpBearer):
             user = User.objects.filter(email=email).first()
             if user is None:
                 raise HttpError(401, '找不到使用者')
-            print(user)
-
+            print(f'使用嚴格認證, 目前使用者: {user}')
             return user  # 回傳 user 物件, 方便在 API 使用
+
         except jwt.ExpiredSignatureError:
             raise HttpError(401, '逾期 Token')
         except jwt.InvalidTokenError as e:
@@ -47,8 +51,40 @@ class JWTAuth(HttpBearer):
             raise HttpError(401, f'失效 token: {str(e)}')
 
 
-class OptionalJWTAuth:
-    pass
+class OptionalJWTAuth(HttpBearer):
+    """
+    可選的 JWT 認證類別
+    - 接受已認證的使用者（取得個人化內容）
+    - 也接受未認證的使用者（取得公開內容）
+    """
+
+    def authenticate(self, request: HttpRequest, token: str) -> AbstractUser:
+        """
+        嘗試解碼 token, 如果成功則回傳 user, 否則回傳 None
+        """
+        try:
+            # 解碼 token
+            payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+
+            # 確認是訪問 token
+            if payload.get('type') != 'access':
+                raise HttpError(401, '無效的 access token')
+
+            # 從 payload 取得信箱
+            email = payload.get('email')
+            if email is None:
+                raise HttpError(401, '無效的 token: 缺少信箱')
+
+            # 透過 email 確認 user 是否存在
+            user = User.objects.filter(email=email).first()
+            if user is None:
+                raise HttpError(401, '找不到使用者')
+            print(f'使用可選認證, 目前使用者: {user}')
+            return user  # 回傳 user 物件, 方便在 API 使用
+
+        except (jwt.ExpiredSignatureError, jwt.InvalidTokenError, User.DoesNotExist):
+            print('訪客使用者, 無需認證')
+            return None
 
 
 # 產生 access token
