@@ -1,24 +1,45 @@
-from typing import List
+from typing import List, Optional
 
 from django.db.models import Q
 from django.http import HttpRequest
-from ninja import Router
+from ninja import Depends, Router
 
 from post.models import Post
 from post.schemas import PostListOut
-from user.models import Follow
-from YiyuanBlog.auth import OptionalJWTAuth
+from user.models import Follow, User
 
 router = Router()
+
+
+@router.get(
+    path='homepage/authtest/',
+    response={200: dict},
+    summary='首頁認證測試',
+)
+def homepage_auth_test(request: HttpRequest) -> tuple[int, dict]:
+    """
+    首頁認證測試
+    """
+    if request.auth:
+        return 200, {
+            'message': '已登入',
+            'request.user 是誰': str(request.user),
+            'request.auth 是誰': str(request.auth),
+        }
+    else:
+        return 200, {'message': '未登入', '使用者': '訪客'}
 
 
 @router.get(
     path='homepage/postlist/',
     response=List[PostListOut],
     summary='首頁文章列表',
-    auth=OptionalJWTAuth(),  # 使用可選的 JWT 認證
+    auth=None,
 )
-def get_homepage(request: HttpRequest) -> List[PostListOut]:
+def get_homepage(
+    request: HttpRequest,
+    user: Optional[User] = Depends,
+) -> List[PostListOut]:
     """
     首頁文章列表
     """
@@ -51,7 +72,7 @@ def get_homepage(request: HttpRequest) -> List[PostListOut]:
     path='homepage/highlight/',
     response=List[PostListOut],
     summary='首頁精選列表',
-    auth=OptionalJWTAuth(),
+    auth=None,
 )
 def get_homepage_highlight(request: HttpRequest) -> List[PostListOut]:
     """
