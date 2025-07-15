@@ -2,11 +2,12 @@ from typing import List, Optional
 
 from django.db.models import Q
 from django.http import HttpRequest
-from ninja import Depends, Router
+from ninja import Router
 
 from post.models import Post
 from post.schemas import PostListOut
-from user.models import Follow, User
+from user.models import Follow
+from YiyuanBlog.auth import get_optional_user
 
 router = Router()
 
@@ -36,20 +37,20 @@ def homepage_auth_test(request: HttpRequest) -> tuple[int, dict]:
     summary='首頁文章列表',
     auth=None,
 )
-def get_homepage(
-    request: HttpRequest,
-    user: Optional[User] = Depends,
-) -> List[PostListOut]:
+def get_homepage(request: HttpRequest) -> List[PostListOut]:
     """
     首頁文章列表
     """
+    # 可選認證, 當前登入使用者
+    user = get_optional_user(request)
+
+    # 查詢文章列表, 預設是公開文章
     post_query = Post.objects.select_related('author').filter(status='published')
 
-    # 權限邏輯: 檢查是否有認證
-    if request.auth:
-        # 已登入使用者: 根據權限過濾
-        user = request.auth  # 這是當前認證的使用者
-
+    # 推播邏輯: 檢查是否有登入
+    if user:
+        # 已登入使用者: 根據權限過濾文章
+        print(f'使用者: {user} 已登入, 根據權限過濾文章')
         conditions = Q(visibility='public') | Q(visibility='members')
         conditions |= Q(author=user)
 
@@ -62,7 +63,8 @@ def get_homepage(
         posts_query = post_query.filter(conditions)
     else:
         # 未登入使用者: 只能看到公開文章
-        posts_query = post_query.filterlter(visibility='public')
+        print('未登入使用者, 只能看到公開文章')
+        posts_query = post_query.filter(visibility='public')
 
     posts = posts_query.order_by('-created_at')[:6]
     return posts

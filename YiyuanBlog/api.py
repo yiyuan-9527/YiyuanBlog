@@ -1,6 +1,6 @@
 from ninja import NinjaAPI
 
-from .auth import JWTAuth, OptionalJWTAuth
+from .auth import JWTAuth
 
 api = NinjaAPI(
     auth=JWTAuth(),  # 設定全域認證

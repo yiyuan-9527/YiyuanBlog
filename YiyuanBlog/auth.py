@@ -57,7 +57,25 @@ def get_optional_user(request: HttpRequest) -> Optional[AbstractUser]:
     """
     輔助函式
     """
-    pass
+    auth_value = request.headers.get('Authorization')
+    if not auth_value:
+        print('訪客使用者, 無須認證')
+        return None
+
+    token = auth_value.split(' ')[1]
+
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        if payload.get('type') == 'access':
+            email = payload.get('email')
+            if email:
+                user = User.objects.filter(email=email).first()
+                print(f'使用可選認證, 目前使用者: {user}')
+                return user
+
+    except (jwt.ExpiredSignatureError, jwt.InvalidTokenError, User.DoesNotExist):
+        print('解碼錯誤, 認定為訪客')
+        return None
 
 
 # class OptionalJWTAuth(HttpBearer):
