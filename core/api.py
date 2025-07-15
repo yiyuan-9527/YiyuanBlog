@@ -1,4 +1,4 @@
-from typing import List, Optional
+from typing import List
 
 from django.db.models import Q
 from django.http import HttpRequest
@@ -6,8 +6,9 @@ from ninja import Router
 
 from post.models import Post
 from post.schemas import PostListOut
-from user.models import Follow
 from YiyuanBlog.auth import get_optional_user
+
+from .service import PostService
 
 router = Router()
 
@@ -45,28 +46,8 @@ def get_homepage(request: HttpRequest) -> List[PostListOut]:
     user = get_optional_user(request)
 
     # 查詢文章列表, 預設是公開文章
-    post_query = Post.objects.select_related('author').filter(status='published')
+    posts = PostService.get_homepage_posts(user=user)
 
-    # 推播邏輯: 檢查是否有登入
-    if user:
-        # 已登入使用者: 根據權限過濾文章
-        print(f'使用者: {user} 已登入, 根據權限過濾文章')
-        conditions = Q(visibility='public') | Q(visibility='members')
-        conditions |= Q(author=user)
-
-        # 追蹤者權限
-        followed_users = Follow.objects.filter(follower=user).values_list(
-            'following', flat=True
-        )
-        conditions |= Q(visibility='followers', author__in=followed_users)
-
-        posts_query = post_query.filter(conditions)
-    else:
-        # 未登入使用者: 只能看到公開文章
-        print('未登入使用者, 只能看到公開文章')
-        posts_query = post_query.filter(visibility='public')
-
-    posts = posts_query.order_by('-created_at')[:6]
     return posts
 
 
