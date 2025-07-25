@@ -1,6 +1,5 @@
 from typing import List
 
-from django.db.models import Q
 from django.http import HttpRequest
 from ninja import Router
 
@@ -11,25 +10,6 @@ from YiyuanBlog.auth import get_optional_user
 from .service import PostService
 
 router = Router()
-
-
-@router.get(
-    path='homepage/authtest/',
-    response={200: dict},
-    summary='首頁認證測試',
-)
-def homepage_auth_test(request: HttpRequest) -> tuple[int, dict]:
-    """
-    首頁認證測試
-    """
-    if request.auth:
-        return 200, {
-            'message': '已登入',
-            'request.user 是誰': str(request.user),
-            'request.auth 是誰': str(request.auth),
-        }
-    else:
-        return 200, {'message': '未登入', '使用者': '訪客'}
 
 
 @router.get(
@@ -61,6 +41,9 @@ def get_homepage_highlight(request: HttpRequest) -> List[PostListOut]:
     """
     首頁精選列表, 需要修改!!!!!
     """
+
+    # 可選認證, 當前登入使用者
+    user = get_optional_user(request)
 
     # 沒有縮圖文章不要上, filter 要加權限
     posts = (
