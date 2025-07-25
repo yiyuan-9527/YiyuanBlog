@@ -36,6 +36,7 @@ router = Router()
     path='{int:post_id}/',
     response=PostDetailOut,
     summary='取得單篇文章內容',
+    auth=None,
 )
 def get_post_detail(request: HttpRequest, post_id: int) -> PostDetailOut:
     """

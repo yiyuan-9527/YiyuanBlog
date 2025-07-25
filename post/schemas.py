@@ -74,7 +74,7 @@ class UpdatePostTagIn(Schema):
     visibility: str = Field(examples=['public', 'private', 'followers', 'members'])
 
 
-class PostDetailOut(Schema):
+class GetPostDetailOut(Schema):
     """
     單篇文章內容輸出
     """
@@ -85,11 +85,8 @@ class PostDetailOut(Schema):
         examples=[{'type': 'text', 'content': '文章的內容'}]
     )
     author: _AuthorInfo = Field(examples=['作者'])
-    category: str | None = Field(default=None, examples=['分類名稱'])
     tags: List[str] = Field(default=[], examples=[['資料科學', '桌上遊戲']])
-    created_at: str = Field(examples=['2023-10-01T12:00:00Z'])
     updated_at: str = Field(examples=['2023-10-01T12:00:00Z'])
-    status: str = Field(examples=['draft', 'published', 'private'])
 
 
 class BookmarkToggleOut(Schema):
