@@ -48,6 +48,7 @@ class User(AbstractUser):
 
 # 追蹤 (Flollow) 模型
 class Follow(models.Model):
+    # related_name 是反向關係, 兩個欄位容易混淆
     follower = models.ForeignKey(
         'User', on_delete=models.CASCADE, related_name='following_relations'
     )

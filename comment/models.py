@@ -32,6 +32,10 @@ class Comment(models.Model):
     def __str__(self):
         return f'{self.author.username} 在 {self.post.title} 留言'
 
+    @property
+    def is_edited(self):
+        return self.created_at != self.updated_at
+
 
 class Like(models.Model):
     """

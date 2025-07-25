@@ -42,3 +42,9 @@ class RefreshTokenRequest(Schema):
 
 class VerifyEmailRequest(Schema):
     active_token: str = Field(examples=['token123'])
+
+
+class FollowToggleOut(Schema):
+    is_following: bool = Field(examples=[True, False])
+    follower_count: int = Field(examples=[10])
+    following_count: int = Field(examples=[5])

@@ -3,7 +3,9 @@ from pathlib import Path
 from django.conf import settings
 from django.contrib.auth import authenticate
 from django.core.files.base import ContentFile
+from django.db import transaction
 from django.http import HttpRequest
+from django.shortcuts import get_object_or_404
 from ninja import File, Router, UploadedFile
 from ninja.errors import HttpError
 
@@ -11,9 +13,10 @@ from shared.images_utils import (
     is_valid_image,
     rename_file,
 )
-from user.models import User
+from user.models import Follow, User
 from user.schemas import (
     CreateUserRequest,
+    FollowToggleOut,
     LoginRequest,
     PrivateUserInfoOut,
     RefreshTokenRequest,
@@ -270,3 +273,55 @@ def update_user_info(
         'status': 'success',
         'user_id': user.id,
     }
+
+
+# ============= 追蹤功能 API==============
+@router.post(
+    path='follow/toggle/{int:user_id}/',
+    response=FollowToggleOut,
+    summary='切換追蹤狀態',
+)
+def toggle_follow(request: HttpRequest, user_id: int) -> FollowToggleOut:
+    """
+    切換追蹤狀態
+    - 如果尚未追蹤, 則開始追蹤
+    - 反之取消追蹤
+    """
+    follower = request.auth
+    following = get_object_or_404(User, id=user_id)
+
+    # 不能追蹤自己
+    if follower == following:
+        print('不能追蹤自己')
+        return {
+            'is_following': False,
+            'follower_count': following.follower_relations.count(),
+            'following_count': follower.following_relations.count(),
+        }
+
+    with transaction.atomic():
+        follow_obj, created = Follow.objects.get_or_create(
+            follower=follower,
+            following=following,
+        )
+
+        # 若建立追蹤物件
+        if created:
+            # 開始追蹤
+            is_following = True
+            print(f'{follower.username} 追蹤了 {following.username}')
+        else:
+            # 取消追蹤
+            follow_obj.delete()
+            is_following = False
+            print(f'{follower.username} 取消追蹤了 {following.username}')
+
+        # 重新計算追蹤數量
+        follower_count = following.follower_relations.count()
+        following_count = follower.following_relations.count()
+
+        return {
+            'is_following': is_following,
+            'follower_count': follower_count,
+            'following_count': following_count,
+        }

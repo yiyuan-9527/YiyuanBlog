@@ -6,11 +6,14 @@ from ninja import File, Router, UploadedFile
 from ninja.errors import HttpError
 
 from post.models import (
+    Bookmark,
     Post,
     PostImage,
     PostVideo,
 )
 from post.schemas import (
+    BookmarkToggleOut,
+    LikeStatusOut,
     PostDetailOut,
     UpdatePostContentIn,
     UpdatePostTagIn,
@@ -65,13 +68,13 @@ def create_post(request: HttpRequest) -> tuple[int, dict]:
 @router.patch(
     path='update/{int:post_id}/',
     response={200: dict},
-    summary='文章及時更新',
+    summary='即時更新文章',
 )
 def upload_post(
     request: HttpRequest, post_id: int, payload: UpdatePostContentIn
 ) -> tuple[int, dict]:
     """
-    文章即時更新
+    即時更新文章
     """
 
     # 取得指定文章
@@ -79,6 +82,10 @@ def upload_post(
         post = get_object_or_404(Post, id=post_id)
     except Post.DoesNotExist:
         raise HttpError(404, '文章不存在')
+
+    # 權限檢查
+    if post.author != request.auth:
+        raise HttpError(403, '無權限修改此文章')
 
     # 更新文章
     # 迭代 payload 的屬性, 將其值設置到 post 物件上
@@ -94,16 +101,16 @@ def upload_post(
 
 
 @router.patch(
-    path='update/{int:post_id}/tags/',
+    path='finish/{int:post_id}/',
     response={200: dict},
-    summary='更新文章標籤, 產生摘要, 縮圖',
+    summary='發布文章',
 )
 @transaction.atomic  # 此 api 有原子性
-def upload_post_tags(
+def post_article(
     request: HttpRequest, post_id: int, payload: UpdatePostTagIn
 ) -> tuple[int, dict]:
     """
-    更新文章標籤, 產生摘要, 縮圖
+    發布文章, 更新標籤. 設定文章權限. 產生摘要. 縮圖
     """
     post = get_object_or_404(Post, id=post_id)
 
@@ -115,6 +122,13 @@ def upload_post_tags(
     if payload.tags is not None:
         update_post_tags(post, payload.tags)
 
+    # 傳入 visibility, 設定文章可見權限
+    if payload.visibility is not None:
+        post.visibility = payload.visibility
+
+    # 更改文章狀態為已發布
+    post.status = 'published'
+
     # 產生文章摘要和縮圖
     if post.content is not None:
         extracted_summary = ProseMirrorContentExtrator.extract_plain_text(post.content)
@@ -125,7 +139,7 @@ def upload_post_tags(
         post.thumbnail_url = extracted_thumnail_url
     post.save()
 
-    print(f'文章標籤,摘要,縮圖更新成功: {post.title}')
+    print(f'文章發布成功: {post.title}')
 
     return 200, {
         'status': 'success',
@@ -242,4 +256,105 @@ def upload_test_video(
         'status': 'success',
         'post_id': post.id,
         'file_url': file_url,
+    }
+
+
+@router.post(
+    path='like/toggle/{int:post_id}/',
+    response={200: LikeStatusOut},
+    summary='切換文章點讚狀態',
+)
+def toggle_post_like(request: HttpRequest, post_id: int) -> tuple[int, LikeStatusOut]:
+    """
+    - 如果用戶尚未對文章點讚, 新增底讚
+    - 反之取消點讚
+    """
+    user = request.auth
+    post = get_object_or_404(Post, id=post_id)
+
+    with transaction.atomic():
+        like_obj, created = post.likes.get_or_create(
+            user=user,
+            post=post,
+        )
+
+        if created:
+            # 新增點讚
+            is_liked = True
+            print(f'{user.username}點讚')
+        else:
+            # 取消讚
+            like_obj.delete()
+            is_liked = False
+            print(f'{user.username}收回讚')
+
+        # 重新計算總讚數
+        total_likes = post.likes.count()
+        print(f'總讚數: {total_likes}')
+
+    return 200, {
+        'is_liked': is_liked,
+        'total_likes': total_likes,
+    }
+
+
+@router.delete(
+    path='delete/{int:post_id}/',
+    response={200: dict},
+    summary='刪除文章',
+)
+def delete_post(request: HttpRequest, post_id: int) -> tuple[int, dict]:
+    """
+    刪除文章
+    """
+    post = get_object_or_404(Post, id=post_id)
+
+    # 權限檢查
+    if post.author != request.auth:
+        raise HttpError(403, '無權限刪除此文章')
+
+    # 刪除文章
+    post.delete()
+    print(f'文章已刪除: {post.title}')
+
+    return 200, {'status': 'success'}
+
+
+# =========== 收藏文章 ===========
+@router.post(
+    path='bookmark/toggle/{int:post_id}/',
+    response=BookmarkToggleOut,
+    summary='收藏或取消收藏文章',
+)
+def toggle_bookmark(request: HttpRequest, post_id: int) -> BookmarkToggleOut:
+    """
+    切換文章收藏狀態
+    - 如果尚未收藏, 則收藏文章
+    - 反之就取消收藏
+    """
+    user = request.auth
+    post = get_object_or_404(Post, id=post_id)
+
+    with transaction.atomic():
+        bookmark_obj, created = Bookmark.objects.get_or_create(
+            user=user,
+            post=post,
+        )
+
+        if created:
+            # 收藏文章
+            is_bookmarked = True
+            print(f'使用者 {user.username} 收藏了文章: {post.title}')
+        else:
+            # 取消收藏文章
+            bookmark_obj.delete()
+            is_bookmarked = False
+            print(f'使用者 {user.username} 取消收藏了文章: {post.title}')
+
+        # 重新計算收藏數
+        bookmark_count = post.bookmarked_by.count()
+
+    return {
+        'is_bookmarked': is_bookmarked,
+        'bookmark_count': bookmark_count,
     }

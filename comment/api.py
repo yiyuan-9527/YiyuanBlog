@@ -1,18 +1,45 @@
+from typing import List
+
+from django.db import transaction
 from django.http import HttpRequest
 from django.shortcuts import get_object_or_404
 from ninja import Router
+from ninja.errors import HttpError
 
 from post.models import (
     Post,
 )
 
-from .models import Comment
+from .models import Comment, Like
 from .schemas import (
+    CommentEditOut,
     CommentIn,
     CommentReplyOut,
+    GetCommentOut,
+    LikeStatusOut,
 )
 
 router = Router()
+
+
+@router.get(
+    path='get/{int:post_id}/',
+    response={200: List[GetCommentOut]},
+    summary='查詢留言',
+    auth=None,
+)
+def get_comment(request: HttpRequest, post_id: int) -> tuple[int:List]:
+    """
+    查詢留言
+    """
+    top_level_comment = Comment.objects.filter(
+        post=post_id,
+        parent__isnull=True,
+    ).prefetch_related('replies__replies__replies')
+
+    return [
+        GetCommentOut.from_comment_recursive(comment) for comment in top_level_comment
+    ]
 
 
 @router.post(
@@ -57,13 +84,98 @@ def create_new_reply(
 
 @router.patch(
     path='edit/{int:comment_id}/',
-    response={200: dict},
+    response={200: CommentEditOut},
     summary='編輯留言',
 )
 def edit_comment(
     request: HttpRequest, comment_id: int, payload: CommentIn
-) -> tuple[int, dict]:
+) -> tuple[int, CommentEditOut]:
     """
     編輯留言
     """
-    
+
+    # 找到該留言
+    comment = get_object_or_404(Comment, id=comment_id)
+
+    if comment.author != request.auth:
+        raise HttpError(403, '沒有權限編輯留言')
+
+    if not payload.content.strip():
+        raise HttpError(400, '內容不能為空')
+
+    # 更新新留言
+    comment.content = payload.content
+    comment.save(update_fields=['content'])
+    print(f'編輯留言成功:{comment.id}')
+
+    return 200, {
+        'content': comment.content,
+        'updated_at': comment.updated_at,
+        'is_edited': comment.is_edited,
+    }
+
+
+@router.delete(
+    path='delete/{int:comment_id}/',
+    response={200: dict},
+    summary='刪除留言',
+)
+def delete_comment(request: HttpRequest, comment_id: int) -> tuple[int, dict]:
+    """
+    刪除留言
+    """
+
+    # 找到該留言
+    comment = get_object_or_404(Comment, id=comment_id)
+
+    if comment.author != request.auth:
+        raise HttpError(403, '沒有權限刪除留言')
+
+    # 刪除留言
+    comment.delete()
+    print('刪除留言成功')
+
+    return 200, {
+        'status': 'success',
+    }
+
+
+@router.post(
+    path='like/toggle/{int:comment_id}/',
+    response={200: LikeStatusOut},
+    summary='切換留言點讚狀態',
+)
+def toggle_comment_like(
+    request: HttpRequest, comment_id: int
+) -> tuple[int, LikeStatusOut]:
+    """
+    - 如果用戶尚未對留言點讚, 新增點讚
+    - 反之取消點讚
+    """
+    user = request.auth
+    comment = get_object_or_404(Comment, id=comment_id)
+
+    with transaction.atomic():
+        like_obj, created = Like.objects.get_or_create(
+            user=user,
+            comment=comment,
+        )
+
+        if created:
+            # 新增點讚
+            is_liked = True
+            print(f'{user.username}點讚')
+        else:
+            # 取消讚
+            like_obj.delete()
+            is_liked = False
+            print(f'{user.username}收回讚')
+
+        # 重新計算總讚數
+        total_likes = comment.likes.count()
+        print(f'總讚數: {total_likes}')
+
+    return 200, {
+        'is_liked': is_liked,
+        'total_likes': total_likes,
+    }

@@ -5,19 +5,11 @@ from ninja import Router
 
 from post.models import Post
 from post.schemas import PostListOut
+from YiyuanBlog.auth import get_optional_user
+
+from .service import PostService
 
 router = Router()
-
-
-@router.get(
-    path='homepage/test/',
-    response=PostListOut,
-    summary='首頁',
-    auth=None,
-)
-def get_homepage_test(request: HttpRequest) -> PostListOut:
-    post = Post.objects.first()
-    return post
 
 
 @router.get(
@@ -30,10 +22,12 @@ def get_homepage(request: HttpRequest) -> List[PostListOut]:
     """
     首頁文章列表
     """
+    # 可選認證, 當前登入使用者
+    user = get_optional_user(request)
 
-    # 根據建立時間取得文章列表，包含作者資訊, filter 要加權限
-    posts = Post.objects.select_related('author').order_by('-created_at')[:6]
-    print('返回首頁文章列表成功')
+    # 查詢文章列表, 預設是公開文章
+    posts = PostService.get_homepage_posts(user=user)
+
     return posts
 
 
@@ -45,8 +39,11 @@ def get_homepage(request: HttpRequest) -> List[PostListOut]:
 )
 def get_homepage_highlight(request: HttpRequest) -> List[PostListOut]:
     """
-    首頁精選列表
+    首頁精選列表, 需要修改!!!!!
     """
+
+    # 可選認證, 當前登入使用者
+    user = get_optional_user(request)
 
     # 沒有縮圖文章不要上, filter 要加權限
     posts = (

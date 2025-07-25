@@ -1,3 +1,5 @@
-# from typing import List
+from ninja import FilterSchema
 
-# from ninja import Field, Schema
+
+class PostFilter(FilterSchema):
+    pass

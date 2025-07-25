@@ -71,6 +71,7 @@ class UpdatePostTagIn(Schema):
 
     # category_slug: str | None = Field(default=None, examples=['game'])
     tags: List[str] | None = Field(default=None, examples=[['資料科學', '桌上遊戲']])
+    visibility: str = Field(examples=['public', 'private', 'followers', 'members'])
 
 
 class PostDetailOut(Schema):
@@ -89,3 +90,21 @@ class PostDetailOut(Schema):
     created_at: str = Field(examples=['2023-10-01T12:00:00Z'])
     updated_at: str = Field(examples=['2023-10-01T12:00:00Z'])
     status: str = Field(examples=['draft', 'published', 'private'])
+
+
+class BookmarkToggleOut(Schema):
+    """
+    切換收藏文章
+    """
+
+    is_bookmarked: bool = Field(examples=[True, False])
+    bookmark_count: int = Field(examples=[10, 0])
+
+
+class LikeStatusOut(Schema):
+    """
+    文章點讚狀態
+    """
+
+    is_liked: bool = Field(default=False, examples=['False=沒讚, True=已讚'])
+    total_likes: int = Field(examples=['總讚數'])
