@@ -3,7 +3,6 @@ from typing import List
 from django.http import HttpRequest
 from ninja import Router
 
-from post.models import Post
 from post.schemas import PostListOut
 from YiyuanBlog.auth import get_optional_user
 
@@ -45,11 +44,7 @@ def get_homepage_highlight(request: HttpRequest) -> List[PostListOut]:
     # 可選認證, 當前登入使用者
     user = get_optional_user(request)
 
-    # 沒有縮圖文章不要上, filter 要加權限
-    posts = (
-        Post.objects.select_related('author')
-        .filter(thumbnail_url__isnull=False)
-        .order_by('?')[:12]
-    )
-    print('返回首頁精選列表成功')
+    # 查詢精選文章列表, 預設是公開文章
+    posts = PostService.get_highlight_posts(user=user)
+
     return posts

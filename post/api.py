@@ -1,5 +1,6 @@
 from django.core.files.base import ContentFile
 from django.db import transaction
+from django.db.models import Count, Prefetch
 from django.http import HttpRequest
 from django.shortcuts import get_object_or_404
 from ninja import File, Router, UploadedFile
@@ -10,13 +11,15 @@ from post.models import (
     Post,
     PostImage,
     PostVideo,
+    TagManagement,
 )
 from post.schemas import (
     BookmarkToggleOut,
+    GetPostDetailOut,
     LikeStatusOut,
-    PostDetailOut,
     UpdatePostContentIn,
     UpdatePostTagIn,
+    _AuthorInfo,
 )
 from post.services import ProseMirrorContentExtrator
 from post.utils import (
@@ -28,20 +31,77 @@ from shared.images_utils import (
     rename_file,
 )
 from storage.services import StorageService
+from user.models import Follow
+from YiyuanBlog.auth import get_optional_user
+
+from .services import GetPostService
 
 router = Router()
 
 
 @router.get(
     path='{int:post_id}/',
-    response=PostDetailOut,
-    summary='取得單篇文章內容',
+    response=GetPostDetailOut,
+    summary='查詢單篇文章內容',
+    auth=None,
 )
-def get_post_detail(request: HttpRequest, post_id: int) -> PostDetailOut:
+def get_post_detail(request: HttpRequest, post_id: int) -> GetPostDetailOut:
     """
-    取得單篇文章內容
+    查詢單篇文章內容
     """
-    pass
+    # 可選認證, 當前登入使用者
+    user = get_optional_user(request)
+
+    # 使用 select_related 和 prefetch_related 優化查詢
+    try:
+        post = (
+            Post.objects.select_related('author')
+            .prefetch_related(
+                'tags',
+                'likes',
+                Prefetch(
+                    'tagmanagement_set',
+                    queryset=TagManagement.objects.select_related('tag'),
+                ),
+            )
+            .get(id=post_id, status='published')
+        )
+    except Post.DoesNotExist:
+        raise HttpError(404, '文章不存在或尚未發布')
+
+    # 檢查文章可見性權限
+    if not GetPostService._check_post_visibility(post, user=user):
+        raise HttpError(404, '無權限查看此文章')
+
+    # 增加瀏覽次數
+    post.views_count += 1
+    post.save(update_fields=['views_count'])
+
+    # 計算作者的追蹤者數量
+    followers_count = Follow.objects.filter(following=post.author).count()
+
+    # 計算文章案讚數
+    like_count = post.likes.count()
+
+    # 取得文章標籤
+    tags = [tag_mgmt.tag.name for tag_mgmt in post.tagmanagement_set.all()]
+
+    # 組裝回應資料
+    return GetPostDetailOut(
+        id=post.id,
+        updated_at=post.updated_at,
+        title=post.title,
+        content=post.content,
+        author=_AuthorInfo(
+            id=post.author.id,
+            username=post.author.username,
+            avatar_url=post.author.avatar.url if post.author.avatar else None,
+        ),
+        followers=followers_count,
+        tags=tags,
+        like_count=like_count,
+        views_count=post.views_count,
+    )
 
 
 @router.post(
