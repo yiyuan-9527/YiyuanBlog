@@ -13,7 +13,7 @@ class _AuthorInfo(Schema):
 
     id: int = Field(examples=[1])
     username: str | None = Field(examples=['Alice'])
-    email: str = Field(examples=['alice@example.com'])
+    # email: str = Field(examples=['alice@example.com'])
     avatar_url: str | None = Field(examples=['https://example.com/avatar.jpg'])
 
 
@@ -22,6 +22,7 @@ class PostListOut(Schema):
     文章列表輸出
     """
 
+    # 欲新增 post_id, 重要！
     # 關聯的作者欄位
     author_name: str | None = Field(alias='author.username', examples=['寶淇'])
     author_avatar: str | None = Field(
@@ -79,14 +80,17 @@ class GetPostDetailOut(Schema):
     單篇文章內容輸出
     """
 
-    id: int = Field(examples=[1])
+    id: int = Field(examples=[1])  # post id
+    updated_at: datetime = Field(examples=['2025-07-29'])  # post updated time
     title: str = Field(examples=['文章標題'])
     content: Dict[str, Any] = Field(
         examples=[{'type': 'text', 'content': '文章的內容'}]
     )
-    author: _AuthorInfo = Field(examples=['作者'])
+    author: _AuthorInfo = Field(examples=['作者'])  # user_id, avatar, username
+    followers: int = Field(examples=[2486])
     tags: List[str] = Field(default=[], examples=[['資料科學', '桌上遊戲']])
-    updated_at: str = Field(examples=['2023-10-01T12:00:00Z'])
+    like_count: int = Field(examples=[10])
+    views_count: int = Field(examples=[100])
 
 
 class BookmarkToggleOut(Schema):

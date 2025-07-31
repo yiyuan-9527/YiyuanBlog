@@ -1,6 +1,9 @@
 from typing import Any, Dict, List
 
+from django.contrib.auth.models import AbstractUser
+
 from post.models import Post
+from user.models import Follow
 
 
 class ProseMirrorContentExtrator:
@@ -62,6 +65,42 @@ class ProseMirrorContentExtrator:
             return traverse_nodes(pm_json['content'])
 
         return None
+
+
+class GetPostService:
+    @staticmethod
+    def _check_post_visibility(post: Post, user: AbstractUser | None = None) -> bool:
+        """
+        檢查文章的可見性
+        """
+        # 公開文章所有人都可以看
+        if post.visibility == 'public':
+            return True
+
+        # 未登入用戶只能看公開文章
+        if not user:
+            return False
+
+        # 作者本人可以看自己的文章
+        if post.author == user:
+            return True
+
+        # 私人文章只有作者可以看
+        if post.visibility == 'private':
+            return False
+
+        # 只限追蹤者的文章
+        if post.visibility == 'followers':
+            return Follow.objects.filter(
+                follower=user,
+                following=post.author,
+            ).exists()
+
+        # 只限會員的文章(已登入即可)
+        if post.visibility == 'members':
+            return True
+
+        return False
 
 
 def get_post_list(limit: int = 10) -> List[Dict[str, Any]]:

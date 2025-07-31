@@ -3,7 +3,6 @@ from typing import List
 from django.http import HttpRequest
 from ninja import Router
 
-from post.models import Post
 from post.schemas import PostListOut
 from YiyuanBlog.auth import get_optional_user
 
