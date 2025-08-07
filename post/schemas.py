@@ -30,6 +30,7 @@ class PostListOut(Schema):
     )
 
     # 文章欄位
+    id: int = Field(example=['1'])  # 文章ID
     updated_at: datetime = Field(examples=['2023-10-01T12:00:00Z'])
     title: str = Field(examples=['文章標題'])
     summery: str | None = Field(examples=['文章摘要'])  # 拼錯 是a 不是e
