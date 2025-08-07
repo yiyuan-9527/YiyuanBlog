@@ -38,7 +38,7 @@ def get_homepage(request: HttpRequest) -> List[PostListOut]:
 )
 def get_homepage_highlight(request: HttpRequest) -> List[PostListOut]:
     """
-    首頁精選列表, 需要修改!!!!!
+    首頁精選列表
     """
 
     # 可選認證, 當前登入使用者
