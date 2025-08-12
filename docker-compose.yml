@@ -1,0 +1,44 @@
+version: '3.8'
+
+services:
+  web:
+
+    # 告訴 Docker Compose 在這個目錄下尋找 Dockerfile 來建立映像檔
+    build: .
+
+    # 將本地端程式碼目錄掛載到容器內, 這樣你在本地修改程式碼時, 容器內會即時同步
+    volumes:
+      - .:/app
+
+    # 將容器的 8000 埠號對應到本地的 8000 埠號, 這樣才能透過瀏覽器連上 Django 伺服器
+    ports:
+      - "8000:8000"
+    
+    # 設定環境變數, 讓 Django 知道如何連接資料庫
+    environment:
+      - POSTGRES_NAME=blog
+      - POSTGRES_USER=user
+      - POSTGRES_PASSWORD=password
+      - DATABASE_URL=postgres://user:password@db:5432/blog
+    
+    # 宣告 web 服務依賴 db 服務, 這樣 Docker Compose 會先啟動 db 服務
+    depends_on:
+      - db
+
+  db:
+    # 直接使用公開的 PostgreSQL 映像檔，版本 13
+    image: postgres:13
+
+    # 設定資料庫的環境變數，這些變數會和 web 服務中的環境變數對應
+    environment:
+      - POSTGRES_NAME=blog
+      - POSTGRES_USER=user
+      - POSTGRES_PASSWORD=password
+    
+    # 使用一個資料卷來持久化儲存資料庫資料，即使容器被移除，資料也不會消失
+    volumes:
+      - postgres_data:/var/lib/postgresql/data/
+
+# 定義一個名為 postgres_data 的資料卷，專門給 db 服務使用
+volumes:
+  postgres_data:
