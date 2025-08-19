@@ -1,6 +1,7 @@
 from typing import List
 
 from django.db import transaction
+from django.db.models import Count
 from django.http import HttpRequest
 from django.shortcuts import get_object_or_404
 from ninja import Router
@@ -9,6 +10,7 @@ from ninja.errors import HttpError
 from post.models import (
     Post,
 )
+from YiyuanBlog.auth import get_optional_user
 
 from .models import Comment, Like
 from .schemas import (
@@ -32,13 +34,28 @@ def get_comment(request: HttpRequest, post_id: int) -> tuple[int:List]:
     """
     查詢留言
     """
-    top_level_comment = Comment.objects.filter(
-        post=post_id,
-        parent__isnull=True,
-    ).prefetch_related('replies__replies__replies')
+    # 可選認證, 當前登入使用者
+    user = get_optional_user(request)
 
-    return [
-        GetCommentOut.from_comment_recursive(comment) for comment in top_level_comment
+    top_level_comments = (
+        Comment.objects.filter(
+            post=post_id,
+            parent__isnull=True,
+        )
+        .prefetch_related(
+            'replies__replies__replies',
+            'likes',  # 預載入點讚資料
+            'replies__likes',  # 預載入回覆的點讚資料
+            'replies__replies__likes',
+        )
+        .annotate(
+            likes_count=Count('likes')  # 用 annotation 計算讚數，避免重複查詢
+        )
+    )
+
+    return 200, [
+        GetCommentOut.from_comment_recursive(comment, user)
+        for comment in top_level_comments
     ]
 
 

@@ -31,23 +31,30 @@ class GetCommentOut(Schema):
     content: str = Field(examples=['我要成為海賊王'])
     author: str = Field(examples=['蒙奇 D 魯夫'])
     updated_at: str = Field(examples=['5分鐘之前'])  # 時間格式經過處理, 是 str
+    is_liked: bool = Field(examples=['False=沒讚, True=已讚'])
     likes_count: int = Field(default=0, examples=[1])
     parent_id: int | None = Field(default=None)
     is_edited: bool = Field(default=False)
     replies: List['GetCommentOut'] = Field(default_factory=list)
 
     @staticmethod
-    def from_comment_recursive(comment):
+    def from_comment_recursive(comment, user=None):
+        # 判斷當前使用者是否已讚這則留言
+        is_liked = False
+        if user:
+            is_liked = comment.likes.filter(user=user).exists()
+
         return {
             'id': comment.id,
             'content': comment.content,
             'author': comment.author.username,
-            'updated_at': to_readable(comment.updated_at),  # 時間格式經過處理, 是 str
-            'likes_count': comment.likes.count(),
+            'updated_at': to_readable(comment.updated_at),
+            'is_liked': is_liked,
+            'likes_count': getattr(comment, 'likes_count', comment.likes.count()),
             'parent_id': comment.parent.id if comment.parent else None,
             'is_edited': comment.created_at != comment.updated_at,
             'replies': [
-                GetCommentOut.from_comment_recursive(reply)
+                GetCommentOut.from_comment_recursive(reply, user)
                 for reply in comment.replies.all()
             ],
         }
